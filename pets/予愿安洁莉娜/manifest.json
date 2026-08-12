@@ -1,0 +1,238 @@
+{
+  "fps": 60,
+  "states": {
+    "attack": {
+      "count": 85,
+      "size": [
+        510,
+        438
+      ],
+      "format": "webp"
+    },
+    "attack_down": {
+      "count": 84,
+      "size": [
+        462,
+        448
+      ],
+      "format": "webp"
+    },
+    "combat_idle": {
+      "count": 233,
+      "size": [
+        420,
+        444
+      ],
+      "format": "webp"
+    },
+    "combat_start": {
+      "count": 54,
+      "size": [
+        630,
+        638
+      ],
+      "format": "webp"
+    },
+    "combat_start2": {
+      "count": 54,
+      "size": [
+        518,
+        608
+      ],
+      "format": "webp"
+    },
+    "fly": {
+      "count": 196,
+      "size": [
+        538,
+        546
+      ],
+      "format": "webp"
+    },
+    "fly_begin": {
+      "count": 54,
+      "size": [
+        578,
+        764
+      ],
+      "format": "webp"
+    },
+    "fly_combat": {
+      "count": 83,
+      "size": [
+        646,
+        686
+      ],
+      "format": "webp"
+    },
+    "fly_end": {
+      "count": 54,
+      "size": [
+        558,
+        550
+      ],
+      "format": "webp"
+    },
+    "fly_idle": {
+      "count": 228,
+      "size": [
+        432,
+        512
+      ],
+      "format": "webp"
+    },
+    "fly_loop": {
+      "count": 84,
+      "size": [
+        652,
+        744
+      ],
+      "format": "webp"
+    },
+    "fly_restart": {
+      "count": 5,
+      "size": [
+        402,
+        652
+      ],
+      "format": "webp"
+    },
+    "idle": {
+      "count": 234,
+      "size": [
+        494,
+        452
+      ],
+      "format": "webp"
+    },
+    "interact": {
+      "count": 223,
+      "size": [
+        496,
+        464
+      ],
+      "format": "webp"
+    },
+    "move": {
+      "count": 54,
+      "size": [
+        516,
+        452
+      ],
+      "format": "webp"
+    },
+    "sit": {
+      "count": 155,
+      "size": [
+        384,
+        440
+      ],
+      "format": "webp"
+    },
+    "skill1_end": {
+      "count": 54,
+      "size": [
+        610,
+        550
+      ],
+      "format": "webp"
+    },
+    "skill1_idle": {
+      "count": 233,
+      "size": [
+        508,
+        448
+      ],
+      "format": "webp"
+    },
+    "skill1_loop": {
+      "count": 82,
+      "size": [
+        528,
+        476
+      ],
+      "format": "webp"
+    },
+    "skill2_begin": {
+      "count": 52,
+      "size": [
+        670,
+        786
+      ],
+      "format": "webp"
+    },
+    "skill2_end": {
+      "count": 47,
+      "size": [
+        704,
+        810
+      ],
+      "format": "webp"
+    },
+    "skill2_idle": {
+      "count": 234,
+      "size": [
+        600,
+        462
+      ],
+      "format": "webp"
+    },
+    "skill2_loop": {
+      "count": 53,
+      "size": [
+        612,
+        508
+      ],
+      "format": "webp"
+    },
+    "skill2_takeoff_begin": {
+      "count": 5,
+      "size": [
+        464,
+        424
+      ],
+      "format": "webp"
+    },
+    "skill2_takeoff_end": {
+      "count": 53,
+      "size": [
+        704,
+        752
+      ],
+      "format": "webp"
+    },
+    "skill2_takeoff_loop": {
+      "count": 23,
+      "size": [
+        510,
+        392
+      ],
+      "format": "webp"
+    },
+    "skill_down_1": {
+      "count": 85,
+      "size": [
+        532,
+        476
+      ],
+      "format": "webp"
+    },
+    "skill_down_2": {
+      "count": 56,
+      "size": [
+        626,
+        524
+      ],
+      "format": "webp"
+    },
+    "sleep": {
+      "count": 155,
+      "size": [
+        522,
+        330
+      ],
+      "format": "webp"
+    }
+  },
+  "size": 1000
+}

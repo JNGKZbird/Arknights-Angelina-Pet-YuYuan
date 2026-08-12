@@ -1,0 +1,19 @@
+__pycache__/
+*.pyc
+.venv/
+
+settings.json
+chat_history.json
+operator_chats.json
+memory.json
+pet_error.log
+
+portable/
+old version/
+work/
+
+Angelina-pet*.exe
+Angelina-pet*.zip
+ArknightsDeskpet*.exe
+ArknightsDeskpet*.zip
+stub.exe
