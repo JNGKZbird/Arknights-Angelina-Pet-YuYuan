@@ -13,7 +13,6 @@
 - **语音播报** — 25 条中配/日配语音，单击触发，闲置播报，启动问候（含节日检测）
 - **战斗系统** — 基建/战斗双模式切换，点击普攻，三技能起飞，1/2/3 技能完整动画链
 - **来信系统** — 自定义干员智能体，独立对话上下文，主动来信（带免打扰时段）
-- **深浅主题** — 右键一键切换，自定义标题栏，适配系统风格
 
 ## 操作
 
@@ -102,21 +101,56 @@ API 密钥仅保存在本地 `settings.json` 中，该文件已在 `.gitignore` 
 
 ```text
 .
-├── main.py                        # 主程序（单文件）
-├── 启动桌宠.bat                   # 启动脚本
-├── create_shortcut.py             # 创建桌面快捷方式
-├── requirements.txt               # Python 依赖
+├── main.py                        # 入口：单实例锁、启动主窗口
+├── core.py                        # 核心：常量、配置默认值、API 请求、干员预设、工具函数
+├── pet_window.py                  # 主窗口：动画引擎、AI 聊天、飞行/战斗系统、来信/语音/记忆
+├── dialogs.py                     # 对话框：设置、历史对话管理、记忆管理、干员管理、上下文查看
+├── chat.py                        # 后台线程：聊天 Worker 和碎碎念 Worker
+├── widgets.py                     # 公共组件：无边框标题栏等可复用 UI
+├── create_shortcut.py             # 工具：生成 Windows 桌面快捷方式
+│
+├── 启动桌宠.bat                   # 一键启动脚本（需修改 Python 路径）
+├── 创建快捷方式.bat               # 一键创建桌面快捷方式
+├── requirements.txt               # Python 依赖（PySide6）
+├── settings.example.json          # 配置文件模板（复制为 settings.json 后填入密钥）
+├── .gitignore                     # 排除 settings.json、聊天记录等敏感数据
 ├── LICENSE                        # MIT 许可证
-├── .gitignore                     # 已排除敏感数据
+│
 ├── assets/
 │   ├── avatar.png                 # 托盘头像
 │   └── avatar.ico                 # 快捷方式图标
+│
 └── pets/予愿安洁莉娜/
-    ├── manifest.json              # 动画状态定义（29 状态，60fps）
-    ├── frames/                    # WebP 格式帧序列
-    ├── voice_cn/                  # 中文语音（25 条）
+    ├── manifest.json              # 动画状态定义（29 个状态，60fps）
+    ├── frames/                    # WebP 格式帧序列（攻击/技能/飞行/待机/行走…）
+    ├── voice_cn/                  # 中文语音（25 条，含节日检测）
     └── voice_jp/                  # 日文语音（25 条）
 ```
+
+### 各模块职责
+
+| 文件 | 行数 | 一句话概括 |
+|------|------|-----------|
+| `main.py` | ~30 | 入口。检查单实例锁，启动 `QApplication` 和 `PetWindow` |
+| `core.py` | ~660 | 所有常量、配置默认值、API 调用、预设干员数据、加载/保存工具。是被其他模块 `from core import *` 的基础依赖 |
+| `pet_window.py` | ~1760 | 桌宠本体。负责动画帧切换与状态链、拖拽交互、右键菜单、AI 聊天全流程、飞行/战斗/来信/语音/记忆系统的调度 |
+| `dialogs.py` | ~1080 | 所有弹窗界面：`SettingsDialog`（设置）、`HistoryWindow`（对话管理）、`OperatorManager`（干员管理）、`ContextWindow`（上下文查看）、`MemoryWindow`（记忆管理）等 |
+| `chat.py` | ~50 | `ChatWorker` 和 `ChatterWorker` 两个 `QThread` 子类，把 API 请求放到后台线程避免阻塞 UI |
+| `widgets.py` | ~200 | 可复用的通用 UI 小部件，如 `_frameless_title_bar()` |
+| `create_shortcut.py` | ~30 | 独立脚本，生成指向 `main.py` 的 Windows `.lnk` 快捷方式 |
+
+### 数据流
+
+```
+用户操作
+  → pet_window.py（交互/菜单/输入）
+    → chat.py（QThread 后台请求）
+      → core.py（chat_api_request 发送 HTTP）
+    → dialogs.py（弹窗 UI）
+  ← 所有模块 from core import *（常量/预设/工具）
+```
+
+所有持久化数据（设置、聊天记录、记忆、干员对话）均以 JSON 文件保存在项目根目录，由 `core.py` 中的 load/save 函数统一管理。
 
 ## 常见问题
 
@@ -135,10 +169,6 @@ API 密钥仅保存在本地 `settings.json` 中，该文件已在 `.gitignore` 
 ### 如何创建桌面快捷方式
 
 运行 `创建快捷方式.bat` 或双击 `create_shortcut.py`，桌面上会生成带图标的快捷方式。
-
-## 许可证
-
-MIT — 为爱发电，随便用，出事了别找我。
 
 ## 未来计划
 
