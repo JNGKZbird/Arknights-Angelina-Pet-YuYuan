@@ -221,7 +221,18 @@ SPEED_OPTIONS = [
     ("1.0x", 1.0),
     ("1.25x", 1.25),
     ("1.5x", 1.5),
+    ("2.0x", 2.0),
 ]
+
+# 移动速度五档（等差数列）：5 = 当前移动速度（100%），1 = 20%；新用户默认 3 档（60%）
+MOVE_SPEED_OPTIONS = [
+    ("1", 0.2),
+    ("2", 0.4),
+    ("3", 0.6),
+    ("4", 0.8),
+    ("5", 1.0),
+]
+DEFAULT_MOVE_SPEED_LEVEL = 3
 
 THEME_ORANGE = "#e8913a"
 THEME_ORANGE_LIGHT = "#f5c282"
@@ -330,6 +341,7 @@ def ensure_preset_operators(settings):
 DEFAULT_SETTINGS = {
     "mode": "free",
     "speed": 1.0,
+    "move_speed": 3,
     "auto_hide_fullscreen": False,
     "locked": False,
     "scale": 0.8,
@@ -343,6 +355,8 @@ DEFAULT_SETTINGS = {
     "chat_model": "",
     "subtitle_size": 14,
     "max_fps": 0,
+    "render_quality": "speed",
+    "combat_view": "front",
     "context_window_size": 20,
     "idle_chatter_interval": "中频",
     "time_awareness": False,

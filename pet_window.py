@@ -9,6 +9,9 @@ from core import *
 from widgets import SubtitleWindow, ChatInputWindow, _frameless_title_bar
 from chat import ChatWorker, ChatterWorker
 from dialogs import HistoryWindow, SettingsDialog, ContextWindow, MemoryWindow, OperatorManager, OperatorWindow
+import numpy as np
+from PIL import Image as PILImage
+from spine38.pet_engine import SpinePet, STATE_MAP, CHAR_SCALE
 
 # Module-level asset loading
 _initial_settings = load_settings()
@@ -20,6 +23,7 @@ with open(MANIFEST_PATH, encoding="utf-8") as _f:
 FPS = int(MANIFEST["fps"])
 FULL_SIZE = MANIFEST["size"]
 RENDER_SCALE = 0.5
+SPINE_DIR = os.path.join(PETS_DIR, ACTIVE_PET, "spine")
 
 
 class PetWindow(QWidget):
@@ -40,6 +44,7 @@ class PetWindow(QWidget):
         self.speed = float(
             pet_state.get("speed", self.settings.get("speed", 1.0))
         )
+        self.move_speed_level = int(self.settings.get("move_speed", DEFAULT_MOVE_SPEED_LEVEL))
         self.auto_hide_fullscreen = bool(
             self.settings.get("auto_hide_fullscreen", False)
         )
@@ -71,6 +76,12 @@ class PetWindow(QWidget):
             ),
         )
         self.cache = {}
+        # Spine 骨架引擎（v2：替换 WebP 逐帧）
+        self.quality = str(self.settings.get("render_quality", "speed")) == "quality"
+        self.combat_view = str(self.settings.get("combat_view", "front"))
+        self.spine = SpinePet(SPINE_DIR)
+        self.spine.combat_view = self.combat_view
+        self.spine.render("idle", 0.0, 96, bilinear=self.quality)
         self.drag = False
         self.pre_drag_state = "idle"
         self.pre_drag_hold = False
@@ -193,11 +204,21 @@ class PetWindow(QWidget):
     def _effective_fps(self):
         state_fps = self.state_fps(self.state)
         if self.max_fps > 0:
-            return min(state_fps, self.max_fps)
-        return state_fps
+            fps = min(state_fps, self.max_fps)
+        else:
+            fps = state_fps
+        # 设备显示上限：按角色所在屏幕的刷新率钳制，避免渲染显示器显示不出的帧
+        screen = QGuiApplication.screenAt(self.frameGeometry().center())
+        if screen is None:
+            screen = QGuiApplication.primaryScreen()
+        rate = screen.refreshRate() if screen else 0.0
+        if rate > 0:
+            fps = min(fps, int(round(rate)))
+        return max(1, fps)
 
     def tick_ms(self):
-        return max(10, int(round(1000 / self._effective_fps() / self.speed)))
+        # 定时器固定按屏幕刷新率节拍，速度通过每 tick 推进帧数实现（见 _fps_step）
+        return max(10, int(round(1000 / self._effective_fps())))
 
     def state_fps(self, name):
         info = MANIFEST["states"][name]
@@ -205,6 +226,12 @@ class PetWindow(QWidget):
 
     def state_info(self, name):
         return MANIFEST["states"][name]
+
+    def state_count(self, name):
+        """状态帧数：骨架状态按动画时长×帧率换算（一次性动画的结束判定用）。"""
+        if name in STATE_MAP:
+            return max(1, int(math.ceil(self.spine.anim_duration(name) * self.state_fps(name))))
+        return self.state_info(name)["count"]
 
     def apply_geometry(self, anchor="bottom"):
         old_x, old_y = self.x(), self.y()
@@ -275,33 +302,48 @@ class PetWindow(QWidget):
             return
         self.sit_timer.start(int(random.normalvariate(60000, 10000)))
 
-    def frame_path(self, index):
-        pad = str(index).zfill(4)
-        return os.path.join(FRAMES_DIR, self.state, f"frame_{pad}.webp")
-
     def cache_key(self):
         return (self.frame_index, self.facing_right)
 
     def current_image(self):
+        """实时渲染当前骨架姿态为 QImage（v2 骨架动画）。
+
+        角色按设备像素比 1:1 物理像素渲染；画布尺寸随状态包围盒变化，角色大小恒定。
+        """
         key = self.cache_key()
         cached = self.cache.get(key)
         if cached is not None:
             return cached
-        image = QImage(self.frame_path(self.frame_index))
-        if not image.isNull():
-            if len(self.cache) > 5:
-                self.cache.clear()
-            if not self.facing_right:
-                image = image.mirrored(True, False)
-            self.cache[key] = image
+        state = self.state
+        if state not in STATE_MAP:
+            return QImage()
+        t = self.frame_index / self.state_fps(state)
+        dpr = max(1.0, self.devicePixelRatioF())
+        char_px = max(48.0, FULL_SIZE * self.scale * RENDER_SCALE * CHAR_SCALE) * dpr
+        if self.quality and char_px <= 320:
+            # 画质优先：1.5 倍超采样 + LANCZOS 缩小 + 边缘抗锯齿
+            big = self.spine.render(state, t, char_px * 1.5,
+                                    mirror=not self.facing_right,
+                                    bilinear=True, loop=True)
+            layout = self.spine.layout_for(state, char_px)
+            arr = np.asarray(PILImage.fromarray(big).resize(
+                (layout["w"], layout["h"]), PILImage.LANCZOS))
+        else:
+            arr = self.spine.render(state, t, char_px,
+                                    mirror=not self.facing_right,
+                                    bilinear=True, loop=True)
+        h, w = arr.shape[:2]
+        image = QImage(arr.data, w, h, w * 4, QImage.Format_RGBA8888).copy()
+        if len(self.cache) > 5:
+            self.cache.clear()
+        self.cache[key] = image
         return image
 
     def _fps_step(self):
         state_fps = self.state_fps(self.state)
         effective = self._effective_fps()
-        if effective >= state_fps:
-            return 1
-        self._fps_accumulator += state_fps / effective
+        # 每 tick 推进 = 状态帧率/显示帧率 × 速度（速度>1 时跳帧，渲染负担不随速度增长）
+        self._fps_accumulator += state_fps / effective * self.speed
         advance = int(self._fps_accumulator)
         if advance > 0:
             self._fps_accumulator -= advance
@@ -315,8 +357,7 @@ class PetWindow(QWidget):
             self.set_state("idle")
             self.update()
             return
-        info = self.state_info(self.state)
-        count = info["count"]
+        count = self.state_count(self.state)
         step = self._fps_step()
         if step == 0:
             self.update()
@@ -359,6 +400,9 @@ class PetWindow(QWidget):
                 # If skill was turned off, end animations go to combat_idle
                 if not self._active_skill and nxt in ("skill1_idle", "skill2_idle", "fly_idle"):
                     nxt = "combat_idle"
+                # 一技能部署动画（带技能部署）结束 → 技能开启待机
+                if self.state == "combat_start2" and self._active_skill == "skill1":
+                    nxt = "skill1_idle"
                 self.set_state(nxt)
                 return
             self.frame_index = (self.frame_index + step) % count
@@ -446,13 +490,9 @@ class PetWindow(QWidget):
 
     def build_flight_route(self):
         vg = self.current_screen_rect()
-        # Use the CURRENT state's frame size for accurate margin
-        img = self.current_image()
-        s = self.scale * RENDER_SCALE
-        fw = (img.width() * s) if not img.isNull() else 200
-        fh = (img.height() * s) if not img.isNull() else 200
-        w_margin = int(fw / 2) + PAD + 20
-        h_margin = int(fh / 2) + PAD + 20
+        # 边距按窗口实际尺寸（与 clamp_to_screens 一致），保证目标点可达、不会把角色逼到屏幕外
+        w_margin = self.width() // 2 + 20
+        h_margin = self.height() // 2 + 20
         left = vg.left() + w_margin
         right = max(left, vg.right() - w_margin)
         top = vg.top() + h_margin
@@ -472,18 +512,11 @@ class PetWindow(QWidget):
         dx = target.x() - current.x()
         dy = target.y() - current.y()
         dist = math.hypot(dx, dy)
-        step = 15.0
+        step = 15.0 * MOVE_SPEED_OPTIONS[self.move_speed_level - 1][1]
         if dist <= step:
             self.flight_route_index += 1
             if self.flight_route_index >= len(self.flight_route):
-                self.flight_move_timer.stop()
-                self.flight_route = []
-                self.flight_route_index = 0
-                if self.state == "move":
-                    self.set_state("idle")
-                elif self.state in FLIGHT_STATES:
-                    self.set_state("fly_end")
-                self.reschedule_flight()
+                self._flight_arrived()
                 return
             return
         # Stuck detection: if at screen edge and can't move toward target, give up
@@ -494,14 +527,7 @@ class PetWindow(QWidget):
             self._stuck_count = 0
         self._stuck_pos = prev
         if self._stuck_count > 30:  # ~1 second stuck
-            self.flight_move_timer.stop()
-            self.flight_route = []
-            self.flight_route_index = 0
-            if self.state == "move":
-                self.set_state("idle")
-            elif self.state in FLIGHT_STATES:
-                self.set_state("fly_end")
-            self.reschedule_flight()
+            self._flight_arrived()
             return
         if dx < -2:
             self.facing_right = False
@@ -509,8 +535,32 @@ class PetWindow(QWidget):
             self.facing_right = True
         nx = current.x() + dx / dist * step
         ny = current.y() + dy / dist * step
-        self.move(int(nx - self.width() / 2), int(ny - self.height() / 2))
-        self.clamp_to_screens()
+        # 边界即时检测：下一步会被屏幕边界挡住 → 立即停止移动（不再沿边框滑行）
+        vg = self.current_screen_rect()
+        w_margin = self.width() // 2
+        h_margin = self.height() // 2
+        left = vg.left() + w_margin
+        right = max(left, vg.right() - w_margin)
+        top = vg.top() + h_margin
+        bottom = max(top, vg.bottom() - h_margin)
+        cx = max(left, min(nx, right))
+        cy = max(top, min(ny, bottom))
+        self.move(int(cx - self.width() // 2), int(cy - self.height() // 2))
+        if abs(cx - nx) > 0.5 or abs(cy - ny) > 0.5:
+            self.finish_flight()
+            self.reschedule_flight()
+            return
+
+    def _flight_arrived(self):
+        """飞行到达终点/停止：清路线、状态收尾、调度下次飞行。"""
+        self.flight_move_timer.stop()
+        self.flight_route = []
+        self.flight_route_index = 0
+        if self.state == "move":
+            self.set_state("idle")
+        elif self.state in FLIGHT_STATES:
+            self.set_state("fly_end")
+        self.reschedule_flight()
 
     def finish_flight(self):
         self.flight_move_timer.stop()
@@ -547,10 +597,18 @@ class PetWindow(QWidget):
         vg = self.virtual_screen_rect()
         # Character is drawn bottom-center in the widget
         img = self.current_image()
-        s = self.scale * RENDER_SCALE
-        char_h = (img.height() * s) if not img.isNull() else 0
-        char_top = self.y() + self.height() - PAD - char_h
-        char_bottom = self.y() + self.height() - PAD
+        if img.isNull():
+            return
+        dpr = max(1.0, self.devicePixelRatioF())
+        if self.state in STATE_MAP:
+            # 角色头顶在画布内的位置（物理像素 → 逻辑）
+            char_px = max(48.0, FULL_SIZE * self.scale * RENDER_SCALE * CHAR_SCALE) * dpr
+            head_y = self.spine.char_top_in_canvas(self.state, char_px) / dpr
+            char_top = self.y() + self.height() - PAD - img.height() / dpr + head_y
+            char_bottom = self.y() + self.height() - PAD - 8 / dpr
+        else:
+            char_top = self.y() + self.height() - PAD - img.height() / dpr
+            char_bottom = self.y() + self.height() - PAD
         char_cx = self.x() + self.width() // 2
         sw = self.subtitle.width()
         sh = self.subtitle.height()
@@ -1160,9 +1218,10 @@ class PetWindow(QWidget):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.SmoothPixmapTransform)
         if not image.isNull():
-            s = self.scale * RENDER_SCALE
-            iw = image.width() * s
-            ih = image.height() * s
+            # 渲染输出为物理像素，除以 DPR 得到逻辑尺寸绘制（1:1 物理像素）
+            dpr = max(1.0, self.devicePixelRatioF())
+            iw = image.width() / dpr
+            ih = image.height() / dpr
             # Bottom-center align
             x = (self.width() - iw) / 2
             y = self.height() - PAD - ih
@@ -1362,6 +1421,13 @@ class PetWindow(QWidget):
             triggered=self.toggle_combat_mode,
         )
         menu.addAction(mode_action)
+        if self.combat_mode:
+            view_action = QAction(
+                "切换至正面视角" if self.combat_view == "back" else "切换至背面视角",
+                self,
+                triggered=self.toggle_combat_view,
+            )
+            menu.addAction(view_action)
         if self.combat_mode:
             skill_menu = menu.addMenu("技能")
             icons_dir = os.path.join(PETS_DIR, "技能图标")
@@ -1588,7 +1654,8 @@ class PetWindow(QWidget):
             elif skill_name == "skill2":
                 self._play_skill_chain("skill2_begin")
             elif skill_name == "skill1":
-                self.set_state("skill1_idle")
+                # 部署动画（Start_2 = 带技能部署）→ 技能开启待机
+                self._play_skill_chain("combat_start2")
 
     def _play_skill_chain(self, start_state, reschedule=True):
         if start_state not in MANIFEST["states"]:
@@ -1639,6 +1706,14 @@ class PetWindow(QWidget):
         self.settings["auto_hide_fullscreen"] = self.auto_hide_fullscreen
         save_settings(self.settings)
         self.check_fullscreen()
+
+    def toggle_combat_view(self):
+        self.combat_view = "back" if self.combat_view == "front" else "front"
+        self.spine.combat_view = self.combat_view
+        self.settings["combat_view"] = self.combat_view
+        save_settings(self.settings)
+        self.cache.clear()
+        self.update()
 
     def check_fullscreen(self):
         if self.manual_hidden:
@@ -1741,8 +1816,13 @@ class PetWindow(QWidget):
         self.settings = merged
         save_settings(merged)
         self.speed = float(data["speed"])
+        if "move_speed" in data:
+            self.move_speed_level = int(data["move_speed"])
         if "scale" in data:
             self.set_scale(data["scale"])
+        if "render_quality" in data:
+            self.quality = str(data["render_quality"]) == "quality"
+            self.cache.clear()
         self.auto_hide_fullscreen = bool(data["auto_hide_fullscreen"])
         was_voice_off = not self.voice_enabled
         self.voice_enabled = bool(data["voice_enabled"])
