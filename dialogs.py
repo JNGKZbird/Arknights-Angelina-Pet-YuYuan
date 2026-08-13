@@ -304,11 +304,36 @@ class SettingsDialog(QDialog):
         self.speed_combo.setCurrentIndex(self._idx_speed(settings.get("speed", 1.0)))
         form.addRow("动作倍速", self.speed_combo)
 
+        self.move_speed_combo = QComboBox()
+        for label, _ in MOVE_SPEED_OPTIONS:
+            self.move_speed_combo.addItem(label)
+        move_idx = int(settings.get("move_speed", DEFAULT_MOVE_SPEED_LEVEL)) - 1
+        self.move_speed_combo.setCurrentIndex(max(0, min(len(MOVE_SPEED_OPTIONS) - 1, move_idx)))
+        form.addRow("移动速度", self.move_speed_combo)
+
         self.fps_combo = QComboBox()
-        for label, value in [("原生", 0), ("30", 30), ("60", 60), ("120", 120)]:
+        for label, value in [("120帧（原生）", 0), ("60帧", 60), ("30帧", 30)]:
             self.fps_combo.addItem(label, value)
         self.fps_combo.setCurrentIndex(self._idx_fps(int(settings.get("max_fps", 0))))
         form.addRow("帧率上限", self.fps_combo)
+
+        screen = QGuiApplication.primaryScreen()
+        rate = int(round(screen.refreshRate())) if screen and screen.refreshRate() > 0 else 0
+        if rate:
+            hint = QLabel(
+                f"已检测屏幕刷新率 {rate}Hz：所选档位高于屏幕刷新率时，将自动按 {rate}Hz 实际渲染"
+            )
+            hint.setWordWrap(True)
+            hint.setStyleSheet("color: #888888; font-size: 12px;")
+            form.addRow("", hint)
+
+        self.quality_combo = QComboBox()
+        self.quality_combo.addItem("速度优先", "speed")
+        self.quality_combo.addItem("画质优先", "quality")
+        self.quality_combo.setCurrentIndex(
+            0 if settings.get("render_quality", "speed") == "speed" else 1
+        )
+        form.addRow("渲染画质", self.quality_combo)
 
         self.mode_combo = QComboBox()
         self.mode_combo.addItem("自由移动", "free")
@@ -518,7 +543,7 @@ class SettingsDialog(QDialog):
 
     @staticmethod
     def _idx_fps(value):
-        fps_opts = [0, 30, 60, 120]
+        fps_opts = [0, 60, 30]
         try:
             return fps_opts.index(int(value))
         except (ValueError, IndexError):
@@ -539,6 +564,8 @@ class SettingsDialog(QDialog):
             "subtitle_size": self.subtitle_size_spin.value(),
             "auto_hide_fullscreen": self.fullscreen_check.isChecked(),
             "max_fps": self.fps_combo.currentData(),
+            "move_speed": self.move_speed_combo.currentIndex() + 1,
+            "render_quality": self.quality_combo.currentData(),
             "context_window_size": 0 if self.context_unlimited_check.isChecked() else self.context_window_spin.value(),
             "extra_prompt": self.extra_prompt_edit.toPlainText().strip(),
             "idle_chatter_interval": self.chatter_combo.currentText(),

@@ -1,5 +1,5 @@
 {
-  "fps": 60,
+  "fps": 120,
   "states": {
     "attack": {
       "count": 85,
@@ -100,32 +100,32 @@
     "idle": {
       "count": 234,
       "size": [
-        494,
-        452
+        1000,
+        1000
       ],
       "format": "webp"
     },
     "interact": {
       "count": 223,
       "size": [
-        496,
-        464
+        1000,
+        1000
       ],
       "format": "webp"
     },
     "move": {
       "count": 54,
       "size": [
-        516,
-        452
+        1000,
+        1000
       ],
       "format": "webp"
     },
     "sit": {
       "count": 155,
       "size": [
-        384,
-        440
+        1000,
+        1000
       ],
       "format": "webp"
     },
@@ -228,8 +228,8 @@
     "sleep": {
       "count": 155,
       "size": [
-        522,
-        330
+        1000,
+        1000
       ],
       "format": "webp"
     }

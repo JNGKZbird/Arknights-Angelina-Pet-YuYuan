@@ -14,6 +14,8 @@
   "chat_model": "deepseek-v4-flash",
   "subtitle_size": 14,
   "max_fps": 0,
+  "render_quality": "speed",
+  "move_speed": 3,
   "context_window_size": 20,
   "idle_chatter_interval": "中频",
   "time_awareness": false,
