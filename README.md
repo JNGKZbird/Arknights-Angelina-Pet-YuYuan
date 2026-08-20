@@ -30,7 +30,7 @@
 - **和你聊天**（接入 AI 后，双击她就能对话）
 - 切到**战斗形态**，演示她的全部技能动画
 
-她由**骨骼动画**实时驱动——不是视频、不是 GIF，是游戏同款 Spine 动画数据在本地渲染，60/120 帧丝滑流畅。
+她由**骨骼动画**实时驱动——不是视频、不是 GIF，是游戏同款 Spine 动画数据在本地渲染，**支持最高 120 帧**（随屏幕刷新率自适应），丝滑流畅。
 
 ---
 
@@ -148,7 +148,7 @@ pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
 - **历史对话**：右键 → 聊天 → 历史对话，可以切换、编辑、删除会话
 - **上下文查看**：查看当前发给 AI 的完整"人设 + 记忆 + 对话"
 - **记忆管理**：她记得你说过的重要事情，可以手动增删
-- **来信**：右键 → 来信 → 管理干员...，可以创建你自己的干员智能体（比如阿米娅），开启后来信功能后她们会主动给你发消息
+- **来信**：右键 → 来信 → 管理干员...，可以**自定义干员智能体**（人格提示词自由编写），开启后来信功能后她们会主动给你发消息。想要现成的角色人格？从我们的 [ArkSkills 干员 Skill 库](https://github.com/JNGKZbird/ArkSkills) 复制粘贴即可（13 位干员 × 长短两套，忠于原作）
 
 ---
 
@@ -202,6 +202,10 @@ pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
 | 安卓 Android | [JNGKZbird-Arknights-Angelina-Pet--YuYuan-Android](https://github.com/JNGKZbird/JNGKZbird-Arknights-Angelina-Pet--YuYuan-Android) | Kotlin + Compose |
 
 三端共享 v3.0 核心：官方 spine-ts 3.8 裁剪管线（Sutherland-Hodgman）、加权 deform 权重条目索引、状态包围盒底边布局锚定。
+
+### 关联仓库
+
+- **[ArkSkills](https://github.com/JNGKZbird/ArkSkills)** — 我们维护的《明日方舟》干员 Skill 库：13 位干员 × 长短两套角色包（忠于 wiki 原作、内置越狱防范）。可复制导入桌宠的自定义智能体。
 
 > **说明**：鸿蒙版使用 ArkTS（.ets）编写，GitHub 语言统计暂不识别 ArkTS，该仓库的语言占比会显示不准确，以目录结构为准。未来**可能**推出 iOS 版本，敬请期待。
 
