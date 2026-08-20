@@ -4,7 +4,7 @@
 
 > 一只住在你 Windows 桌面上的安洁莉娜。她会陪在你身边：走来走去、坐下休息、回应你的点击、和你聊天。不需要任何游戏本体，下载就能养。
 
-基于 [AstrariaX/Angelina-pet](https://github.com/AstrariaX/Angelina-pet) 深度重做，特此向原作者致谢。本项目为粉丝同人作品，素材版权归《明日方舟》/ 鹰角网络所有。
+> 基于 [AstrariaX/Angelina-pet](https://github.com/AstrariaX/Angelina-pet) 深度重做——原作者采用逐帧 PNG 动画，本项目改用**骨骼动画**方案：实际体积大幅缩减、动画更加丝滑，这是站在巨人肩膀上的优化。由衷感谢原作者的创意与工作。本项目为粉丝同人作品，素材版权归《明日方舟》/ 鹰角网络所有。
 
 ---
 
