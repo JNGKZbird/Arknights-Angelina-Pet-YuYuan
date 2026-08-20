@@ -7,7 +7,7 @@ from PySide6.QtWidgets import QApplication
 
 from core import (
     load_settings, save_settings, ensure_single_instance,
-    ensure_preset_operators, ERROR_LOG,
+    ERROR_LOG,
 )
 from pet_window import PetWindow
 
@@ -26,7 +26,6 @@ def main():
     )
 
     settings = load_settings()
-    ensure_preset_operators(settings)
     save_settings(settings)
 
     PetWindow()

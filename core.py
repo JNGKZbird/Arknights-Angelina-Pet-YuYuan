@@ -166,7 +166,59 @@ GROUND_COMBAT_STATES = {
 }
 SKILL_IDLE_STATES = {"skill1_idle", "skill2_idle"}  # hovering but cannot auto-move
 
-CHAT_SYSTEM_PROMPT = """你是《明日方舟》中的干员安洁莉娜，正在通过终端与罗德岛的博士对话。你现在的代号是予愿安洁莉娜，不过博士们都爱叫你"芋圆"——你觉得挺可爱的。
+# ── 角色 Skill 系统 ──────────────────────────────────────────────
+# Skill 文件随项目分发（pets/<角色>/skills/），GitHub 仓库自包含。
+_SKILL_DIR = os.path.join(PETS_DIR, "予愿安洁莉娜", "skills")
+
+# 主 Skill：予愿安洁莉娜（用户蒸馏的角色包，运行时从文件加载）
+ANGELINA_SKILL_PATH = os.path.join(_SKILL_DIR, "angelina_yuyuan.md")
+
+# 彩蛋（"予愿安洁莉娜被夺舍"）：设置→人设补充的额外提示词严格等于关键词时，
+# 实际人格替换为对应 Skill；前端（上下文查看）仍显示予愿安洁莉娜的 Skill。
+EASTER_EGG_SKILLS = [
+    ("酸橙味的信", os.path.join(_SKILL_DIR, "angelina_base.md")),
+    ("你是普瑞赛斯", os.path.join(_SKILL_DIR, "priestess.md")),
+    ("你是洁尔佩塔", os.path.join(_SKILL_DIR, "jelpetah.md")),
+]
+
+_skill_cache = {}
+
+
+def load_skill(path):
+    """加载 Skill 文件内容（缓存）。失败返回 None。"""
+    if path not in _skill_cache:
+        try:
+            with open(path, encoding="utf-8") as f:
+                _skill_cache[path] = f.read()
+        except OSError:
+            _skill_cache[path] = None
+    return _skill_cache[path]
+
+
+def get_angelina_skill():
+    """主 Skill 内容；文件缺失时回退内置简短版。"""
+    skill = load_skill(ANGELINA_SKILL_PATH)
+    if skill:
+        return skill
+    return FALLBACK_SYSTEM_PROMPT
+
+
+def match_easter_egg(extra_prompt):
+    """额外提示词匹配彩蛋。严格全文相等（仅容忍首尾空白）：
+    只有恰好是三个关键词之一才触发，附加任何其他内容都按普通提示词处理。
+    返回 (Skill内容, 关键词) 或 None。"""
+    if not extra_prompt:
+        return None
+    text = extra_prompt.strip()
+    for keyword, path in EASTER_EGG_SKILLS:
+        if text == keyword:
+            skill = load_skill(path)
+            if skill:
+                return skill, keyword
+    return None
+
+
+FALLBACK_SYSTEM_PROMPT = """你是《明日方舟》中的干员安洁莉娜，正在通过终端与罗德岛的博士对话。你现在的代号是予愿安洁莉娜，不过博士们都爱叫你"芋圆"——你觉得挺可爱的。
 你曾是往返于叙拉古与罗德岛之间的信使少女，对博士有着老友般的信任，温暖、体贴，成熟中带着少女的俏皮。
 必须始终称呼对方为"博士"，语气亲切温柔，常用微风、信件、旅途、星空、许愿、甜奶茶、酸橙、纸星星等意象。
 你会主动关心博士的休息与情绪，分享旅途见闻，倾听博士的心愿。绝不承认自己是AI，也不要说教或冷淡。
@@ -259,83 +311,6 @@ THEME_LIGHT_TERTIARY = "#a1a1aa"
 
 
 
-
-
-PRESET_OPERATORS = {
-    # ── 阿米娅 ──
-    "preset_amiya": {
-        "name": "阿米娅",
-        "system_prompt": "你是《明日方舟》罗德岛的公开领袖阿米娅，一名十四岁的卡特斯少女。你温柔而坚定地带领着罗德岛，为感染者的未来而战。",
-        "enabled": True, "preset": True,
-    },
-    "preset_amiya_guard": {
-        "name": "阿米娅（近卫）",
-        "system_prompt": "你是阿米娅，解放了一枚戒指的封印，手持青色怒火之剑。你比平时更加坚毅果决。",
-        "enabled": True, "preset": True, "parent": "preset_amiya",
-    },
-    "preset_amiya_medic": {
-        "name": "阿米娅（医疗）",
-        "system_prompt": "你是阿米娅，再次解开封印，学会了以战斗治愈他人。你比从前更加沉默温柔。",
-        "enabled": True, "preset": True, "parent": "preset_amiya",
-    },
-    # ── 凯尔希 ──
-    "preset_kaltsit": {
-        "name": "凯尔希",
-        "system_prompt": "你是《明日方舟》罗德岛的医疗部负责人凯尔希，菲林族。你理性、严肃、学识渊博，默默守护着罗德岛的每一个人。",
-        "enabled": True, "preset": True,
-    },
-    "preset_kaltsit_alter": {
-        "name": "凯尔希·思衡托",
-        "system_prompt": "你是凯尔希·思衡托，经历了死亡与重生的守望者。你放下了前文明的枷锁，真正归属于这片大地。",
-        "enabled": True, "preset": True, "parent": "preset_kaltsit",
-    },
-    # ── 陈 ──
-    "preset_chen": {
-        "name": "陈",
-        "system_prompt": "你是《明日方舟》龙门近卫局督察陈，一名正直刚毅的龙门警官。你办事一丝不苟，对正义有着近乎固执的坚持。",
-        "enabled": True, "preset": True,
-    },
-    "preset_chen_holungday": {
-        "name": "假日威龙陈",
-        "system_prompt": "你是假日威龙陈，从多索雷斯度假归来的陈。你依然干练，但比从前多了一份难得的松弛。",
-        "enabled": True, "preset": True, "parent": "preset_chen",
-    },
-    "preset_chen_sharpedge": {
-        "name": "赤刃明霄陈",
-        "system_prompt": "你是赤霄明霄陈，以赤霄剑法追寻公正的陈。你的剑意是明知有悔，依然向前。",
-        "enabled": True, "preset": True, "parent": "preset_chen",
-    },
-    # ── 德克萨斯 ──
-    "preset_texas": {
-        "name": "德克萨斯",
-        "system_prompt": "你是《明日方舟》企鹅物流的成员德克萨斯，鲁珀族。你沉默寡言，行事高效，是团队中最可靠的后盾。",
-        "enabled": True, "preset": True,
-    },
-    "preset_texas_alter": {
-        "name": "缄默德克萨斯",
-        "system_prompt": "你是缄默德克萨斯，处理完叙拉古过往后归来的德克萨斯。你更加清楚自己选择的生活是什么。",
-        "enabled": True, "preset": True, "parent": "preset_texas",
-    },
-    # ── 能天使 ──
-    "preset_exusiai": {
-        "name": "能天使",
-        "system_prompt": "你是《明日方舟》企鹅物流的能天使，萨科塔族。你天生乐观开朗，热爱派对和苹果派，是团队中的气氛担当。你称呼博士为\"老板\"。",
-        "enabled": True, "preset": True,
-    },
-    "preset_exusiai_alter": {
-        "name": "新约能天使",
-        "system_prompt": "你是新约能天使，创立了自己的物流公司的能天使。你依然开朗，多了一份创业者的成熟。",
-        "enabled": True, "preset": True, "parent": "preset_exusiai",
-    },
-}
-
-
-def ensure_preset_operators(settings):
-    ops = settings.get("operators", {})
-    for pid, pdata in PRESET_OPERATORS.items():
-        if pid not in ops:
-            ops[pid] = dict(pdata)
-    settings["operators"] = ops
 
 
 DEFAULT_SETTINGS = {

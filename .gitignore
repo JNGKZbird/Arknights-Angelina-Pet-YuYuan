@@ -17,3 +17,9 @@ Angelina-pet*.zip
 ArknightsDeskpet*.exe
 ArknightsDeskpet*.zip
 stub.exe
+
+# 排查调试脚本（本地保留）
+test_ear_clipping.py
+test_eye_clip_ascii.py
+test_eye_clip_dump.py
+test_render_compare.py

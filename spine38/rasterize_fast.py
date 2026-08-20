@@ -6,8 +6,9 @@ renderer.py 是纯 numpy 参考实现（测试/离线烘焙用）；
 import math
 import numpy as np
 import numba
-from .renderer import _polygon_mask
-from .skeleton import compute_region_vertices, compute_mesh_vertices
+from .clipping import clip_attachment_polys, clip_triangle_to_polys
+from .skeleton import (compute_region_vertices, compute_mesh_vertices,
+                       collect_bone_mats)
 from .loader import RegionAttachment, MeshAttachment, ClippingAttachment
 
 
@@ -194,6 +195,8 @@ def render_skeleton_fast(skeleton, atlas, out_rgba, transform=None, bilinear=Fal
     transform: (scale, tx, ty) — 骨架坐标 → 像素坐标。
     性能要点：整帧三角形合并成一次内核调用（numba 调度开销约 0.5ms/次），
     仅裁剪段单独成批以保持绘制顺序。
+    裁剪语义：官方 spine-ts 3.8 SkeletonClipping 逐三角形 Sutherland-Hodgman
+    裁剪（见 clipping.py），非掩码门控。
     """
     if transform is None:
         scale, tx, ty = 1.0, 0.0, 0.0
@@ -201,76 +204,84 @@ def render_skeleton_fast(skeleton, atlas, out_rgba, transform=None, bilinear=Fal
         scale, tx, ty = transform
     h, w = out_rgba.shape[:2]
     out_rgba.fill(0)
-    # 每帧复用的缓冲（避免重复分配）
-    if not hasattr(render_skeleton_fast, "_bufs") or render_skeleton_fast._bufs[0].shape[0] != h:
-        render_skeleton_fast._bufs = (
-            np.zeros((h, w, 4), dtype=np.uint8),   # 裁剪临时缓冲
-        )
-    tmp_buf = render_skeleton_fast._bufs[0]
+    bone_mats = collect_bone_mats(skeleton)
 
-    def _emit(slot, attachment, tris, tri_uvs):
+    def _emit(slot, attachment, to_screen):
+        """收集附件三角形 + UV。to_screen=True 直接输出屏幕坐标（普通槽），
+        False 输出骨架坐标（裁剪段内做 S-H 用）。三角形为扁平 6 元组。"""
         region = attachment.region
         if region is None or region.page is None or region.page.texture is None:
-            return None, 0
-        n_tris = 0
-        if isinstance(attachment, RegionAttachment):
-            verts = compute_region_vertices(slot, attachment)
-            r = region
-            # 角点顺序：BL, TL, TR, BR（照 spine-ts setRegion 的 uvs 赋值）
-            if r.degrees == 90:
-                corners = [(r.u2, r.v2), (r.u, r.v2), (r.u, r.v), (r.u2, r.v)]
+            return None, [], []
+        tris = []
+        tri_uvs = []
+        if to_screen:
+            if isinstance(attachment, RegionAttachment):
+                verts = compute_region_vertices(slot, attachment)
+                r = region
+                if r.degrees == 90:
+                    corners = [(r.u2, r.v2), (r.u, r.v2), (r.u, r.v), (r.u2, r.v)]
+                else:
+                    corners = [(r.u, r.v2), (r.u, r.v), (r.u2, r.v), (r.u2, r.v2)]
+                uvs = [crd for corner in corners for crd in corner]
+                tris.append((verts[0] * scale + tx, h - (verts[1] * scale + ty),
+                             verts[2] * scale + tx, h - (verts[3] * scale + ty),
+                             verts[4] * scale + tx, h - (verts[5] * scale + ty)))
+                tris.append((verts[4] * scale + tx, h - (verts[5] * scale + ty),
+                             verts[6] * scale + tx, h - (verts[7] * scale + ty),
+                             verts[2] * scale + tx, h - (verts[3] * scale + ty)))
+                tri_uvs.append((uvs[0], uvs[1], uvs[2], uvs[3], uvs[4], uvs[5]))
+                tri_uvs.append((uvs[4], uvs[5], uvs[6], uvs[7], uvs[2], uvs[3]))
+            elif isinstance(attachment, MeshAttachment):
+                verts = compute_mesh_vertices(slot, attachment, 0,
+                                              attachment.world_vertices_length // 2,
+                                              bone_mats=bone_mats)
+                for t in range(0, len(attachment.triangles), 3):
+                    i0, i1, i2 = attachment.triangles[t:t + 3]
+                    tris.append((verts[i0 * 2] * scale + tx, h - (verts[i0 * 2 + 1] * scale + ty),
+                                 verts[i1 * 2] * scale + tx, h - (verts[i1 * 2 + 1] * scale + ty),
+                                 verts[i2 * 2] * scale + tx, h - (verts[i2 * 2 + 1] * scale + ty)))
+                    tri_uvs.append((attachment.uvs[i0 * 2], attachment.uvs[i0 * 2 + 1],
+                                    attachment.uvs[i1 * 2], attachment.uvs[i1 * 2 + 1],
+                                    attachment.uvs[i2 * 2], attachment.uvs[i2 * 2 + 1]))
             else:
-                corners = [(r.u, r.v2), (r.u, r.v), (r.u2, r.v), (r.u2, r.v2)]
-            uvs = [crd for corner in corners for crd in corner]
-            tris.append([(verts[0] * scale + tx, h - (verts[1] * scale + ty)),
-                         (verts[2] * scale + tx, h - (verts[3] * scale + ty)),
-                         (verts[4] * scale + tx, h - (verts[5] * scale + ty))])
-            tris.append([(verts[4] * scale + tx, h - (verts[5] * scale + ty)),
-                         (verts[6] * scale + tx, h - (verts[7] * scale + ty)),
-                         (verts[2] * scale + tx, h - (verts[3] * scale + ty))])
-            tri_uvs.append([(uvs[0], uvs[1]), (uvs[2], uvs[3]), (uvs[4], uvs[5])])
-            tri_uvs.append([(uvs[4], uvs[5]), (uvs[6], uvs[7]), (uvs[2], uvs[3])])
-            n_tris = 2
-        elif isinstance(attachment, MeshAttachment):
-            verts = compute_mesh_vertices(slot, attachment, 0,
-                                          attachment.world_vertices_length // 2)
-            tri_count = len(attachment.triangles) // 3
-            for t in range(tri_count):
-                i0, i1, i2 = attachment.triangles[t * 3:t * 3 + 3]
-                tris.append([(verts[i0 * 2] * scale + tx, h - (verts[i0 * 2 + 1] * scale + ty)),
-                             (verts[i1 * 2] * scale + tx, h - (verts[i1 * 2 + 1] * scale + ty)),
-                             (verts[i2 * 2] * scale + tx, h - (verts[i2 * 2 + 1] * scale + ty))])
-                tri_uvs.append([(attachment.uvs[i0 * 2], attachment.uvs[i0 * 2 + 1]),
-                                (attachment.uvs[i1 * 2], attachment.uvs[i1 * 2 + 1]),
-                                (attachment.uvs[i2 * 2], attachment.uvs[i2 * 2 + 1])])
-            n_tris = tri_count
+                return None, [], []
         else:
-            return None, 0
-        return region.page.texture, n_tris
+            if isinstance(attachment, RegionAttachment):
+                verts = compute_region_vertices(slot, attachment)
+                r = region
+                if r.degrees == 90:
+                    corners = [(r.u2, r.v2), (r.u, r.v2), (r.u, r.v), (r.u2, r.v)]
+                else:
+                    corners = [(r.u, r.v2), (r.u, r.v), (r.u2, r.v), (r.u2, r.v2)]
+                uvs = [crd for corner in corners for crd in corner]
+                tris.append((verts[0], verts[1], verts[2], verts[3], verts[4], verts[5]))
+                tris.append((verts[4], verts[5], verts[6], verts[7], verts[2], verts[3]))
+                tri_uvs.append((uvs[0], uvs[1], uvs[2], uvs[3], uvs[4], uvs[5]))
+                tri_uvs.append((uvs[4], uvs[5], uvs[6], uvs[7], uvs[2], uvs[3]))
+            elif isinstance(attachment, MeshAttachment):
+                verts = compute_mesh_vertices(slot, attachment, 0,
+                                              attachment.world_vertices_length // 2,
+                                              bone_mats=bone_mats)
+                for t in range(0, len(attachment.triangles), 3):
+                    i0, i1, i2 = attachment.triangles[t:t + 3]
+                    tris.append((verts[i0 * 2], verts[i0 * 2 + 1],
+                                 verts[i1 * 2], verts[i1 * 2 + 1],
+                                 verts[i2 * 2], verts[i2 * 2 + 1]))
+                    tri_uvs.append((attachment.uvs[i0 * 2], attachment.uvs[i0 * 2 + 1],
+                                    attachment.uvs[i1 * 2], attachment.uvs[i1 * 2 + 1],
+                                    attachment.uvs[i2 * 2], attachment.uvs[i2 * 2 + 1]))
+            else:
+                return None, [], []
+        return region.page.texture, tris, tri_uvs
 
     def _flush(batch, tex):
         if not batch[0]:
             return
-        bt = np.asarray(batch[0], dtype=np.float64)
-        bu = np.asarray(batch[1], dtype=np.float64)
+        bt = np.asarray(batch[0], dtype=np.float64).reshape(-1, 3, 2)
+        bu = np.asarray(batch[1], dtype=np.float64).reshape(-1, 3, 2)
         bc = np.asarray(batch[2], dtype=np.float64)
         bb = np.asarray(batch[3], dtype=np.int32)
         rasterize_batch(out_rgba, tex, bt, bu, bc, bb, bilinear)
-        batch[0].clear()
-        batch[1].clear()
-        batch[2].clear()
-        batch[3].clear()
-
-    def _flush_clipped(batch, tex, mask):
-        if not batch[0]:
-            return
-        bt = np.asarray(batch[0], dtype=np.float64)
-        bu = np.asarray(batch[1], dtype=np.float64)
-        bc = np.asarray(batch[2], dtype=np.float64)
-        bb = np.asarray(batch[3], dtype=np.int32)
-        tmp_buf.fill(0)
-        rasterize_batch(tmp_buf, tex, bt, bu, bc, bb, bilinear)
-        composite_over(out_rgba, tmp_buf, mask)
         batch[0].clear()
         batch[1].clear()
         batch[2].clear()
@@ -280,62 +291,75 @@ def render_skeleton_fast(skeleton, atlas, out_rgba, transform=None, bilinear=Fal
     clipped = ([], [], [], [])
     normal_tex = None
     clip_tex = None
-    clip_mask = None
+    clip_polys = None           # 骨架坐标闭合 CW 裁剪多边形列表
     clip_end_index = -1
 
     for slot in skeleton.draw_order:
         attachment = slot.attachment
         if attachment is None:
             # JS 渲染器语义：空附件也检查裁剪结束（end slot 可能恰好无附件，
-            # 否则掩码永不结束、其后所有槽位被误裁）
-            if clip_mask is not None and slot.data.index == clip_end_index:
-                clip_mask = None
+            # 否则裁剪段永不结束、其后所有槽位被误裁）
+            if clip_polys is not None and slot.data.index == clip_end_index:
+                clip_polys = None
                 clip_end_index = -1
             continue
         if isinstance(attachment, ClippingAttachment):
-            if clip_mask is None:
+            # JS：已在裁剪中则忽略新裁剪；结束条件为遇到 end_slot（按 data.index）
+            if clip_polys is None:
                 verts = compute_mesh_vertices(slot, attachment, 0,
-                                              attachment.world_vertices_length // 2)
-                pts = [(verts[i] * scale + tx, h - (verts[i + 1] * scale + ty))
-                       for i in range(0, len(verts), 2)]
-                clip_mask = _polygon_mask(pts, h, w)
+                                              attachment.world_vertices_length // 2,
+                                              bone_mats=bone_mats)
+                clip_polys = clip_attachment_polys(verts)
                 clip_end_index = (attachment.end_slot.index
                                   if attachment.end_slot is not None
                                   else len(skeleton.slots))
             continue
-        tris = []
-        tri_uvs = []
-        tex, n_tris = _emit(slot, attachment, tris, tri_uvs)
-        if n_tris == 0:
+        tex, tris_world, tri_uvs = _emit(slot, attachment,
+                                         to_screen=(clip_polys is None))
+        if tex is None or not tris_world:
             continue
         color = (slot.color.r, slot.color.g, slot.color.b, slot.color.a)
-        if clip_mask is not None:
-            # 进入裁剪段：先冲刷普通批次（保持绘制顺序），再累积裁剪批次
+        if clip_polys is not None:
+            # 裁剪段：官方 S-H 逐三角形裁剪（骨架坐标）→ 交集 → 屏幕坐标 fan
             if normal_tex is not None:
                 _flush(normal, normal_tex)
                 normal_tex = None
             if clip_tex is None:
                 clip_tex = tex
-            clipped[0].extend(tris)
-            clipped[1].extend(tri_uvs)
-            for _ in range(n_tris):
-                clipped[2].append(color)
-                clipped[3].append(slot.data.blend_mode)
+            for k in range(len(tris_world)):
+                t6 = tris_world[k]
+                u6 = tri_uvs[k]
+                results = clip_triangle_to_polys(
+                    [(t6[0], t6[1]), (t6[2], t6[3]), (t6[4], t6[5])],
+                    [(u6[0], u6[1]), (u6[2], u6[3]), (u6[4], u6[5])],
+                    clip_polys)
+                for pts, uvs in results:
+                    screen = [(pts[i] * scale + tx, h - (pts[i + 1] * scale + ty))
+                              for i in range(0, len(pts), 2)]
+                    for i in range(1, len(screen) - 1):
+                        clipped[0].append((screen[0][0], screen[0][1],
+                                           screen[i][0], screen[i][1],
+                                           screen[i + 1][0], screen[i + 1][1]))
+                        clipped[1].append((uvs[0], uvs[1],
+                                           uvs[i * 2], uvs[i * 2 + 1],
+                                           uvs[(i + 1) * 2], uvs[(i + 1) * 2 + 1]))
+                        clipped[2].append(color)
+                        clipped[3].append(slot.data.blend_mode)
             if slot.data.index == clip_end_index:
-                _flush_clipped(clipped, clip_tex, clip_mask)
+                _flush(clipped, clip_tex)
                 clip_tex = None
-                clip_mask = None
+                clip_polys = None
                 clip_end_index = -1
         else:
             if normal_tex is None:
                 normal_tex = tex
-            normal[0].extend(tris)
+            normal[0].extend(tris_world)
             normal[1].extend(tri_uvs)
-            for _ in range(n_tris):
+            for _ in range(len(tris_world)):
                 normal[2].append(color)
                 normal[3].append(slot.data.blend_mode)
     if normal_tex is not None:
         _flush(normal, normal_tex)
-    if clip_tex is not None and clip_mask is not None:
-        _flush_clipped(clipped, clip_tex, clip_mask)
+    if clip_tex is not None and clip_polys is not None:
+        _flush(clipped, clip_tex)
     return out_rgba
