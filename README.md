@@ -211,7 +211,7 @@ pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
 
 ### 技术亮点
 
-**v3.0**：眼睛骨骼泄漏修复（deform 权重条目索引 + 官方 SkeletonClipping 逐行移植）、坐下布局修复（状态包围盒底边锚定）、渲染性能优化（numba 化，quality 模式单帧约 12ms）、角色 Skill 系统（蒸馏角色包运行时加载）、夺舍彩蛋（设置「人设补充」输入 `酸橙味的信` / `你是普瑞赛斯` / `你是洁尔佩塔` 触发）。
+**v3.0**：眼睛骨骼泄漏修复（deform 权重条目索引 + 官方 SkeletonClipping 逐行移植）、坐下布局修复（状态包围盒底边锚定）、渲染性能优化（numba 化，quality 模式单帧约 12ms）、角色 Skill 系统（蒸馏角色包运行时加载）、隐藏彩蛋（在人设补充里留下某句"密语"，会有意想不到的人格回应）。
 
 **v2.0**：从零实现的 Spine 3.8 运行时（spine38：二进制解析、骨骼/约束求解、numba 光栅化），29 个动画状态与官方运行时逐骨骼对齐；120fps 自适应渲染；基建/战斗双模式与三技能完整动画链。
 
