@@ -4,7 +4,19 @@
 
 一个基于 PySide6 的《明日方舟》透明桌面桌宠，角色为予愿安洁莉娜（Angelina the Mellow Wish）。v2.0 采用**自研 Spine 骨骼动画引擎**实时渲染游戏原版骨骼数据。支持 AI 聊天、语音播报、战斗动画、多干员智能体等功能。
 
-> 基于 [AstrariaX/Angelina-pet](https://github.com/AstrariaX/Angelina-pet) 深度重做。本项目为粉丝同人作品，素材版权归《明日方舟》/ 鹰角网络所有。
+> 基于 [AstrariaX/Angelina-pet](https://github.com/AstrariaX/Angelina-pet) 深度重做，特此向原作者致谢。本项目为粉丝同人作品，素材版权归《明日方舟》/ 鹰角网络所有。
+
+## 三端开源
+
+| 平台 | 仓库 | 说明 |
+|---|---|---|
+| Windows（本仓库） | [Arknights-Angelina-Pet-YuYuan](https://github.com/JNGKZbird/Arknights-Angelina-Pet-YuYuan) | Python + PySide6，v3.0 基线 |
+| 鸿蒙 HarmonyOS NEXT | [Arknights-Angelina-Pet-YuYuan-HarmonyOS-NEXT](https://github.com/JNGKZbird/Arknights-Angelina-Pet-YuYuan-HarmonyOS-NEXT) | ArkTS + C++ GLES3 渲染 |
+| 安卓 Android | [JNGKZbird-Arknights-Angelina-Pet--YuYuan-Android](https://github.com/JNGKZbird/JNGKZbird-Arknights-Angelina-Pet--YuYuan-Android) | Kotlin + Compose |
+
+三端共享 v3.0 核心：官方 spine-ts 3.8 裁剪管线（Sutherland-Hodgman）、加权 deform 权重条目索引、状态包围盒底边布局锚定。
+
+> **说明**：鸿蒙版使用 ArkTS（.ets）编写，GitHub 语言统计暂不识别 ArkTS，该仓库的语言占比会显示不准确，以目录结构为准。未来**可能**推出 iOS 版本，敬请期待。
 
 ## v3.0 更新
 
