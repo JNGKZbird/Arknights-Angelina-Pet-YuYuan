@@ -25,6 +25,9 @@ FULL_SIZE = MANIFEST["size"]
 RENDER_SCALE = 0.5
 SPINE_DIR = os.path.join(PETS_DIR, ACTIVE_PET, "spine")
 
+# 高刷屏渲染阻塞的速度补偿（见 _fps_step）
+SPEED_COMPENSATION = 2.0
+
 
 class PetWindow(QWidget):
     def __init__(self):
@@ -343,7 +346,9 @@ class PetWindow(QWidget):
         state_fps = self.state_fps(self.state)
         effective = self._effective_fps()
         # 每 tick 推进 = 状态帧率/显示帧率 × 速度（速度>1 时跳帧，渲染负担不随速度增长）
-        self._fps_accumulator += state_fps / effective * self.speed
+        # SPEED_COMPENSATION：120Hz 高刷下渲染耗时阻塞计时器使实际速度减半的补偿
+        # （所有速度档位实际×2：设置 1.0=原来的正常速度）。渲染优化到位后应移除。
+        self._fps_accumulator += state_fps / effective * self.speed * SPEED_COMPENSATION
         advance = int(self._fps_accumulator)
         if advance > 0:
             self._fps_accumulator -= advance
@@ -397,6 +402,9 @@ class PetWindow(QWidget):
         elif self.state in STATE_CHAIN:
             if not self.hold_state and self.frame_index + step >= count:
                 nxt = STATE_CHAIN[self.state]
+                # 背面只有一套攻击（素材限制，鸿蒙定案）：平A后直接回战斗待机，不借正面模型补第二击
+                if self.state == "attack" and self.combat_view == "back":
+                    nxt = "combat_idle"
                 # If skill was turned off, end animations go to combat_idle
                 if not self._active_skill and nxt in ("skill1_idle", "skill2_idle", "fly_idle"):
                     nxt = "combat_idle"
@@ -688,7 +696,7 @@ class PetWindow(QWidget):
     def _generate_chatter(self):
         if self._chatter_worker is not None and self._chatter_worker.isRunning():
             return
-        sys_prompt = self._build_system_prompt()
+        sys_prompt, _ = self._effective_system_prompt()
         worker = ChatterWorker(
             self.chat_base_url,
             self.chat_api_key,
@@ -712,21 +720,22 @@ class PetWindow(QWidget):
         self._chatter_worker = None
 
     def enter_chat_mode(self):
+        # 进入安洁莉娜本人的聊天：清智能体通信状态（否则发送会走智能体路径）
+        self._active_operator_chat = None
         if not self.chat_enabled:
             self.show_subtitle("聊天功能没有开启哦，博士。", 6000)
             return
         if not self.chat_base_url or not self.chat_api_key or not self.chat_model:
             self.show_subtitle(CHAT_API_HINT, 8000)
             return
-        sys_prompt = self._build_system_prompt()
+        sys_prompt, is_egg = self._effective_system_prompt()
         if not self.chat_history:
             sid = self.chat_data["active_session"]
             session = self.chat_data["sessions"].get(sid, {})
             msgs = session.get("messages", [])
-            self.chat_history = [
-                {"role": "system", "content": sys_prompt},
-                {"role": "system", "content": CHAT_LORE},
-            ]
+            self.chat_history = [{"role": "system", "content": sys_prompt}]
+            if not is_egg:
+                self.chat_history.append({"role": "system", "content": CHAT_LORE})
             if msgs:
                 limit = self.context_window_size
                 for m in msgs[-limit:]:
@@ -968,7 +977,7 @@ class PetWindow(QWidget):
         self.show_subtitle(f"正在与「{name}」通信（由安洁莉娜送达），博士。", 5000)
 
     def _build_system_prompt(self):
-        sys_prompt = CHAT_SYSTEM_PROMPT
+        sys_prompt = get_angelina_skill()
         player_name = self.settings.get("player_name", "").strip()
         name_style = self.settings.get("name_style", "ID")
         if player_name:
@@ -991,6 +1000,17 @@ class PetWindow(QWidget):
             if lines:
                 sys_prompt += f"\n\n[博士相关的长期记忆]\n{lines}"
         return sys_prompt
+
+    def _effective_system_prompt(self):
+        """实际发送用系统提示词：额外提示词命中彩蛋时整体替换为彩蛋 Skill。
+
+        前端（上下文查看）仍走 _build_system_prompt（予愿安洁莉娜）——
+        彩蛋人格对用户隐藏。返回 (prompt, is_easter_egg)。"""
+        extra = self.settings.get("extra_prompt", "").strip()
+        egg = match_easter_egg(extra) if extra else None
+        if egg:
+            return egg[0], True
+        return self._build_system_prompt(), False
 
     def show_context(self):
         if self._active_operator_chat:
@@ -1056,6 +1076,16 @@ class PetWindow(QWidget):
             return
         if self.chat_worker is not None and self.chat_worker.isRunning():
             return
+        # 刷新系统提示词（extra_prompt 可能在会话中修改 → 彩蛋状态可能变化）
+        sys_prompt, is_egg = self._effective_system_prompt()
+        if self.chat_history and self.chat_history[0]["role"] == "system":
+            self.chat_history[0]["content"] = sys_prompt
+            has_lore = (len(self.chat_history) > 1
+                        and self.chat_history[1].get("role") == "system")
+            if is_egg and has_lore:
+                del self.chat_history[1]
+            elif not is_egg and not has_lore:
+                self.chat_history.insert(1, {"role": "system", "content": CHAT_LORE})
         # Inject time awareness directly into user message so LLM can't miss it
         # (kept out of system prompt to preserve prompt cache hits)
         if self.settings.get("time_awareness", False):

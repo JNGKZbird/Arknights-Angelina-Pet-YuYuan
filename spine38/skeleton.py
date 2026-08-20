@@ -1,5 +1,7 @@
 """Spine 3.8 姿态计算 — ported from spine-ts 3.8 Bone/Skeleton."""
 import math
+import numpy as np
+import numba
 from .loader import (TRANSFORM_NORMAL, TRANSFORM_ONLY_TRANSLATION,
                     TRANSFORM_NO_ROTATION_OR_REFLECTION, TRANSFORM_NO_SCALE,
                     TRANSFORM_NO_SCALE_OR_REFLECTION)
@@ -431,57 +433,111 @@ def compute_region_vertices(slot, region_attachment, out=None):
     return out
 
 
-def compute_mesh_vertices(slot, mesh, start=0, count=None, out=None):
-    """网格附件世界顶点（含变形）。变形值在 slot.deform 缓冲区。"""
-    skeleton_bones = slot.bone.skeleton.bones
+@numba.njit(cache=True)
+def _mesh_verts_weighted(vertices, bones, deform, bone_mats, start, count, out):
+    """加权网格顶点 numba 内核。deform 按权重条目序号索引（官方语义）。"""
+    o = 0
+    bi = 0
+    vi = 0
+    f = 0
+    v = start
+    if start > 0:
+        for _ in range(start):
+            n = bones[bi]
+            bi += n + 1
+            f += n
+        vi = f * 3
+    has_deform = deform.shape[0] > 0
+    while v < start + count:
+        bone_count = bones[bi]
+        bi += 1
+        wx = 0.0
+        wy = 0.0
+        for _ in range(bone_count):
+            bone_index = bones[bi]
+            bi += 1
+            if has_deform:
+                vx = vertices[vi] + deform[f * 2]
+                vy = vertices[vi + 1] + deform[f * 2 + 1]
+            else:
+                vx = vertices[vi]
+                vy = vertices[vi + 1]
+            weight = vertices[vi + 2]
+            vi += 3
+            f += 1
+            a = bone_mats[bone_index, 0]
+            b = bone_mats[bone_index, 1]
+            c = bone_mats[bone_index, 2]
+            d = bone_mats[bone_index, 3]
+            bx = bone_mats[bone_index, 4]
+            by = bone_mats[bone_index, 5]
+            wx += (vx * a + vy * b + bx) * weight
+            wy += (vx * c + vy * d + by) * weight
+        out[o] = wx
+        out[o + 1] = wy
+        o += 2
+        v += 1
+    return o
+
+
+@numba.njit(cache=True)
+def _mesh_verts_unweighted(vertices, deform, a, b, c, d, wx, wy, start, count, out):
+    """非加权网格顶点 numba 内核。deform 非空时 vertices 已被替换为 deform。"""
+    o = 0
+    for v in range(start, start + count):
+        vx = vertices[v * 2]
+        vy = vertices[v * 2 + 1]
+        out[o] = vx * a + vy * b + wx
+        out[o + 1] = vx * c + vy * d + wy
+        o += 2
+    return o
+
+
+def collect_bone_mats(skeleton):
+    """所有骨骼世界矩阵 → (n, 6) float64 数组 [a, b, c, d, world_x, world_y]。"""
+    bones = skeleton.bones
+    mats = np.empty((len(bones), 6), dtype=np.float64)
+    for i, b in enumerate(bones):
+        mats[i, 0] = b.a
+        mats[i, 1] = b.b
+        mats[i, 2] = b.c
+        mats[i, 3] = b.d
+        mats[i, 4] = b.world_x
+        mats[i, 5] = b.world_y
+    return mats
+
+
+def compute_mesh_vertices(slot, mesh, start=0, count=None, out=None, bone_mats=None):
+    """网格附件世界顶点（含变形）。变形值在 slot.deform 缓冲区。
+
+    bone_mats: collect_bone_mats 输出（渲染路径每帧构建一次复用）。
+    """
     deform = slot.deform
     bones = mesh.bones
     vertices = mesh.vertices
     if count is None:
         count = mesh.world_vertices_length // 2
-    if out is None:
-        out = [0.0] * (count * 2)
     if bones is None:
         # 非加权：deform 非空时替换顶点数组（绝对坐标语义）
         if deform:
             vertices = deform
         a, b, c, d = slot.bone.a, slot.bone.b, slot.bone.c, slot.bone.d
         wx, wy = slot.bone.world_x, slot.bone.world_y
-        for v in range(start, start + count):
-            vx = vertices[v * 2]
-            vy = vertices[v * 2 + 1]
-            out[(v - start) * 2] = vx * a + vy * b + wx
-            out[(v - start) * 2 + 1] = vx * c + vy * d + wy
-        return out
-    # 加权：vertices 存 (x, y, weight) 三元组，bones 存 [数量, 骨骼索引...]
-    # deform 为增量（每顶点 2 个 float）
-    o = 0
-    bi = 0
-    vi = 0
-    v = start
-    while v < start + count:
-        bone_count = bones[bi]
-        bi += 1
-        wx = wy = 0.0
-        for _ in range(bone_count):
-            bone_index = bones[bi]
-            bi += 1
-            bone = skeleton_bones[bone_index]
-            if deform:
-                vx = vertices[vi] + deform[v * 2]
-                vy = vertices[vi + 1] + deform[v * 2 + 1]
-            else:
-                vx = vertices[vi]
-                vy = vertices[vi + 1]
-            weight = vertices[vi + 2]
-            vi += 3
-            wx += (vx * bone.a + vy * bone.b + bone.world_x) * weight
-            wy += (vx * bone.c + vy * bone.d + bone.world_y) * weight
-        out[o] = wx
-        out[o + 1] = wy
-        o += 2
-        v += 1
-    return out
+        out_arr = np.empty(count * 2, dtype=np.float64)
+        n = _mesh_verts_unweighted(
+            np.asarray(vertices, dtype=np.float64), np.empty(0),
+            a, b, c, d, wx, wy, start, count, out_arr)
+        return out_arr[:n].tolist()
+    # 加权：deform 增量按权重条目序号索引（官方 f=skip<<1）
+    if bone_mats is None:
+        bone_mats = collect_bone_mats(slot.bone.skeleton)
+    out_arr = np.empty(count * 2, dtype=np.float64)
+    n = _mesh_verts_weighted(
+        np.asarray(vertices, dtype=np.float64),
+        np.asarray(bones, dtype=np.int64),
+        np.asarray(deform, dtype=np.float64) if deform else np.empty(0),
+        bone_mats, start, count, out_arr)
+    return out_arr[:n].tolist()
 
 
 def compute_attachment_vertices(slot, attachment, start, count):

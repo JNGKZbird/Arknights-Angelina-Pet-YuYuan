@@ -94,12 +94,25 @@ class SpinePet:
         # 每模型基准角色尺寸与锚点（setup 姿态包围盒）——固定缩放与固定锚点的基准
         self._model_extent = {}
         self._model_setup_bounds = {}
-        for key, (skeleton, _, _) in self.models.items():
+        for key, (skeleton, sd, _) in self.models.items():
+            self._preconvert_attachments(sd)
             skeleton.set_to_setup_pose()
             skeleton.update_world_transform()
             ox, oy, w, h = skeleton.get_bounds()
             self._model_extent[key] = max(w, h)
             self._model_setup_bounds[key] = (ox, oy, ox + w, oy + h)
+
+    @staticmethod
+    def _preconvert_attachments(sd):
+        """附件顶点/骨骼数组预转换为 numpy（渲染路径零转换开销）。"""
+        for skin in sd.skins:
+            for att in skin.attachments.values():
+                if (hasattr(att, "vertices") and att.vertices is not None
+                        and isinstance(att.vertices, list)):
+                    att.vertices = np.asarray(att.vertices, dtype=np.float64)
+                if (hasattr(att, "bones") and att.bones is not None
+                        and isinstance(att.bones, list)):
+                    att.bones = np.asarray(att.bones, dtype=np.int64)
 
     def _resolve_model(self, state):
         model_key, _ = STATE_MAP[state]
@@ -152,10 +165,12 @@ class SpinePet:
         return cached
 
     def layout_for(self, state, char_px, margin=8):
-        """状态布局：固定缩放 + 固定锚点（模型 setup 姿态），画布覆盖"动画联合 ∪ setup"。
+        """状态布局：固定缩放 + 锚定状态包围盒底边，画布覆盖"动画联合 ∪ setup"。
 
-        角色在所有动画下大小恒定、锚点一致（游戏同款固定视口）；
-        画布尺寸随动画包围盒变化，角色在画布内移动而锚点不动。
+        角色在所有动画下大小恒定；画布尺寸随动画包围盒变化。
+        垂直锚定用状态包围盒底边（bottom）：站立时 bottom=setup 脚 → 脚贴底；
+        坐下动画腿前伸下探（骨架 y≈-140），bottom 随之降低 → 腿完整显示且
+        贴画布底（地面线恒定）。若锚定 setup 底边，坐下时腿会超出画布被裁。
         返回 {"scale", "tx", "ty", "w", "h"}，其中 w/h 为画布像素尺寸。"""
         key = (state, char_px, self.combat_view)
         cached = self._layout_cache.get(key)
@@ -171,9 +186,8 @@ class SpinePet:
         top = max(max_y, sy1)
         w = max(1, int(math.ceil((right - left) * scale)) + margin * 2)
         h = max(1, int(math.ceil((top - bottom) * scale)) + margin * 2)
-        # 锚点 = setup 包围盒中心/底边（每模型固定，所有状态一致）
         tx = w / 2 - ((sx0 + sx1) / 2) * scale
-        ty = margin - sy0 * scale
+        ty = margin - bottom * scale
         cached = {"scale": scale, "tx": tx, "ty": ty, "w": w, "h": h}
         self._layout_cache[key] = cached
         return cached

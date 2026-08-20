@@ -2,6 +2,7 @@
 import numpy as np
 from .loader import (RegionAttachment, MeshAttachment, ClippingAttachment)
 from .skeleton import (compute_region_vertices, compute_mesh_vertices)
+from .clipping import clip_attachment_polys, clip_triangle_to_polys
 
 
 def _rasterize_triangles(out_rgba, texture_rgba, tri_xy, tri_uv, color, blend):
@@ -79,6 +80,7 @@ def render_skeleton(skeleton, atlas, out_rgba, transform=None):
     """渲染骨架到 out_rgba（RGBA uint8，H×W×4）。
 
     transform: (scale, tx, ty) — 骨架坐标 → 像素坐标。
+    裁剪语义：官方 spine-ts 3.8 SkeletonClipping 逐三角形 S-H 裁剪（见 clipping.py）。
     """
     if transform is None:
         scale, tx, ty = 1.0, 0.0, 0.0
@@ -86,24 +88,22 @@ def render_skeleton(skeleton, atlas, out_rgba, transform=None):
         scale, tx, ty = transform
     h, w = out_rgba.shape[:2]
     out_rgba.fill(0)
-    clip_mask = None
+    clip_polys = None
     clip_end_index = -1
     for slot in skeleton.draw_order:
         attachment = slot.attachment
         if attachment is None:
             # JS 渲染器语义：空附件也检查裁剪结束
-            if clip_mask is not None and slot.data.index == clip_end_index:
-                clip_mask = None
+            if clip_polys is not None and slot.data.index == clip_end_index:
+                clip_polys = None
                 clip_end_index = -1
             continue
         if isinstance(attachment, ClippingAttachment):
             # JS：已在裁剪中则忽略新裁剪；结束条件为遇到 end_slot（按 data.index）
-            if clip_mask is None:
+            if clip_polys is None:
                 verts = compute_mesh_vertices(slot, attachment, 0,
                                               attachment.world_vertices_length // 2)
-                pts = [(verts[i] * scale + tx, h - (verts[i + 1] * scale + ty))
-                       for i in range(0, len(verts), 2)]
-                clip_mask = _polygon_mask(pts, h, w)
+                clip_polys = clip_attachment_polys(verts)
                 clip_end_index = (attachment.end_slot.index
                                   if attachment.end_slot is not None
                                   else len(skeleton.slots))
@@ -117,24 +117,20 @@ def render_skeleton(skeleton, atlas, out_rgba, transform=None):
             else:
                 corners = [(r.u, r.v2), (r.u, r.v), (r.u2, r.v), (r.u2, r.v2)]
             uvs = [c for corner in corners for c in corner]
-            tris = [[(verts[0] * scale + tx, h - (verts[1] * scale + ty)),
-                     (verts[2] * scale + tx, h - (verts[3] * scale + ty)),
-                     (verts[4] * scale + tx, h - (verts[5] * scale + ty))],
-                    [(verts[4] * scale + tx, h - (verts[5] * scale + ty)),
-                     (verts[6] * scale + tx, h - (verts[7] * scale + ty)),
-                     (verts[2] * scale + tx, h - (verts[3] * scale + ty))]]
+            tris_world = [[(verts[0], verts[1]), (verts[2], verts[3]), (verts[4], verts[5])],
+                          [(verts[4], verts[5]), (verts[6], verts[7]), (verts[2], verts[3])]]
             tri_uv = [[(uvs[0], uvs[1]), (uvs[2], uvs[3]), (uvs[4], uvs[5])],
                       [(uvs[4], uvs[5]), (uvs[6], uvs[7]), (uvs[2], uvs[3])]]
         elif isinstance(attachment, MeshAttachment):
             verts = compute_mesh_vertices(slot, attachment, 0,
                                           attachment.world_vertices_length // 2)
-            tris = []
+            tris_world = []
             tri_uv = []
             for t in range(0, len(attachment.triangles), 3):
                 i0, i1, i2 = attachment.triangles[t:t + 3]
-                tris.append([(verts[i0 * 2] * scale + tx, h - (verts[i0 * 2 + 1] * scale + ty)),
-                             (verts[i1 * 2] * scale + tx, h - (verts[i1 * 2 + 1] * scale + ty)),
-                             (verts[i2 * 2] * scale + tx, h - (verts[i2 * 2 + 1] * scale + ty))])
+                tris_world.append([(verts[i0 * 2], verts[i0 * 2 + 1]),
+                                   (verts[i1 * 2], verts[i1 * 2 + 1]),
+                                   (verts[i2 * 2], verts[i2 * 2 + 1])])
                 tri_uv.append([(attachment.uvs[i0 * 2], attachment.uvs[i0 * 2 + 1]),
                                (attachment.uvs[i1 * 2], attachment.uvs[i1 * 2 + 1]),
                                (attachment.uvs[i2 * 2], attachment.uvs[i2 * 2 + 1])])
@@ -154,23 +150,39 @@ def render_skeleton(skeleton, atlas, out_rgba, transform=None):
             blend = "multiply"
         elif slot.data.blend_mode == 3:
             blend = "screen"
-        # 裁剪：被裁剪的槽位用掩码（end_slot 本身也裁剪，渲染后结束裁剪）
-        if clip_mask is not None:
-            tmp = np.zeros_like(out_rgba)
-            _rasterize_triangles(tmp, tex,
-                                 np.array(tris), np.array(tri_uv), color, blend)
-            tmp = tmp * (clip_mask[:, :, None] / 255.0)
-            _composite(out_rgba, tmp)
+        # 裁剪段：官方 S-H 逐三角形裁剪（end_slot 本身也裁剪，渲染后结束裁剪）
+        if clip_polys is not None:
+            for k in range(len(tris_world)):
+                results = clip_triangle_to_polys(tris_world[k], tri_uv[k], clip_polys)
+                for pts, uvs in results:
+                    screen = [(pts[i] * scale + tx, h - (pts[i + 1] * scale + ty))
+                              for i in range(0, len(pts), 2)]
+                    tris_out = []
+                    tri_uv_out = []
+                    for i in range(1, len(screen) - 1):
+                        tris_out.append([screen[0], screen[i], screen[i + 1]])
+                        tri_uv_out.append([(uvs[0], uvs[1]),
+                                           (uvs[i * 2], uvs[i * 2 + 1]),
+                                           (uvs[(i + 1) * 2], uvs[(i + 1) * 2 + 1])])
+                    if tris_out:
+                        _rasterize_triangles(out_rgba, tex,
+                                             np.array(tris_out), np.array(tri_uv_out),
+                                             color, blend)
             if slot.data.index == clip_end_index:
-                clip_mask = None
+                clip_polys = None
+                clip_end_index = -1
         else:
+            tris = [[(t[0][0] * scale + tx, h - (t[0][1] * scale + ty)),
+                     (t[1][0] * scale + tx, h - (t[1][1] * scale + ty)),
+                     (t[2][0] * scale + tx, h - (t[2][1] * scale + ty))]
+                    for t in tris_world]
             _rasterize_triangles(out_rgba, tex,
                                  np.array(tris), np.array(tri_uv), color, blend)
     return out_rgba
 
 
 def _polygon_mask(pts, h, w):
-    """多边形填充掩码（偶数奇数规则）。"""
+    """多边形填充掩码（偶数奇数规则）——仅供测试对比，渲染路径已改用官方三角化语义。"""
     mask = np.zeros((h, w), dtype=np.uint8)
     if len(pts) < 3:
         return mask
@@ -194,6 +206,8 @@ def _polygon_mask(pts, h, w):
         inside ^= cond & (px < xint)
     mask[y0:y1, x0:x1] = inside.astype(np.uint8) * 255
     return mask
+
+
 
 
 def _composite(dst, src):
