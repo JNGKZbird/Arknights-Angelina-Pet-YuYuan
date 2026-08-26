@@ -148,7 +148,7 @@ pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
 - **历史对话**：右键 → 聊天 → 历史对话，可以切换、编辑、删除会话
 - **上下文查看**：查看当前发给 AI 的完整"人设 + 记忆 + 对话"
 - **记忆管理**：她记得你说过的重要事情，可以手动增删
-- **来信**：右键 → 来信 → 管理干员...，可以**自定义干员智能体**（人格提示词自由编写），开启后来信功能后她们会主动给你发消息。想要现成的角色人格？从我们的 [Arknights-Skills 干员 Skill 库](https://github.com/JNGKZbird/Arknights-Skills) 复制粘贴即可（20+ 位干员 × 长短两套，持续扩充中，忠于原作）
+- **来信**：右键 → 来信 → 管理干员...，可以**自定义干员智能体**（人格提示词自由编写），开启后来信功能后她们会主动给你发消息。想要现成的角色人格？从我们的 [Arknights-Persona-Distill 干员人格库](https://github.com/JNGKZbird/Arknights-Persona-Distill) 复制粘贴即可（每位干员长短两套，忠于原作，持续扩充中）
 
 ---
 
@@ -205,7 +205,7 @@ pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
 
 ### 关联仓库
 
-- **[Arknights-Skills](https://github.com/JNGKZbird/Arknights-Skills)** — 我们维护的《明日方舟》干员 Skill 库：20+ 位干员 × 长短两套角色包（持续扩充中，忠于 wiki 原作、内置越狱防范）。可复制导入桌宠的自定义智能体。
+- **[Arknights-Persona-Distill](https://github.com/JNGKZbird/Arknights-Persona-Distill)** — 我们维护的《明日方舟》干员人格蒸馏库：每位干员长短两套角色包（忠于 wiki 原作、内置越狱防范），另有双向对戏包与多角色话剧包，持续扩充中。可复制导入桌宠的自定义智能体。
 
 > **说明**：鸿蒙版使用 ArkTS（.ets）编写，GitHub 语言统计暂不识别 ArkTS，该仓库的语言占比会显示不准确，以目录结构为准。未来**可能**推出 iOS 版本，敬请期待。
 
