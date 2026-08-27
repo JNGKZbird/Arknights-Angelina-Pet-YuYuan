@@ -25,9 +25,6 @@ FULL_SIZE = MANIFEST["size"]
 RENDER_SCALE = 0.5
 SPINE_DIR = os.path.join(PETS_DIR, ACTIVE_PET, "spine")
 
-# 高刷屏渲染阻塞的速度补偿（见 _fps_step）
-SPEED_COMPENSATION = 2.0
-
 
 class PetWindow(QWidget):
     def __init__(self):
@@ -346,9 +343,9 @@ class PetWindow(QWidget):
         state_fps = self.state_fps(self.state)
         effective = self._effective_fps()
         # 每 tick 推进 = 状态帧率/显示帧率 × 速度（速度>1 时跳帧，渲染负担不随速度增长）
-        # SPEED_COMPENSATION：120Hz 高刷下渲染耗时阻塞计时器使实际速度减半的补偿
-        # （所有速度档位实际×2：设置 1.0=原来的正常速度）。渲染优化到位后应移除。
-        self._fps_accumulator += state_fps / effective * self.speed * SPEED_COMPENSATION
+        # 注意：曾因 120Hz 渲染阻塞加过 ×2 补偿，性能优化后已移除——
+        # 1.0× 即官方动画原速（与 D:\模型 参考视频 x1 一致）
+        self._fps_accumulator += state_fps / effective * self.speed
         advance = int(self._fps_accumulator)
         if advance > 0:
             self._fps_accumulator -= advance
@@ -1757,7 +1754,7 @@ class PetWindow(QWidget):
             icon = QIcon(os.path.join(FRAMES_DIR, "idle", "frame_0000.webp"))
         self.tray = QSystemTrayIcon(self)
         self.tray.setIcon(icon)
-        self.tray.setToolTip("明日方舟桌宠 - 予愿安洁莉娜")
+        self.tray.setToolTip("酸橙味的信")
 
         self.tray_menu = QMenu(self)
         self.tray_show_action = QAction(self)
