@@ -276,6 +276,9 @@ class PetWindow(QWidget):
             self.reschedule_flight()
         self.schedule_idle()
         self.update()
+        # 三技能待机悬停（fly_idle）时调度自由移动——游戏原设定：酸橙的心事开启后可自由飞行
+        if name == "fly_idle":
+            self.reschedule_flight()
         if name == "fly" and not self.flight_route and not self.flight_move_timer.isActive():
             QTimer.singleShot(0, self.finish_flight)
 
