@@ -9,6 +9,7 @@ from core import (
     load_settings, save_settings, ensure_single_instance,
     ERROR_LOG,
 )
+from asset_manager import ensure_assets
 from pet_window import PetWindow
 
 
@@ -27,6 +28,9 @@ def main():
 
     settings = load_settings()
     save_settings(settings)
+
+    if not ensure_assets():
+        return 0
 
     PetWindow()
     return app.exec()

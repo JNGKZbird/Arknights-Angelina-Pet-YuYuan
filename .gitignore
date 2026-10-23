@@ -12,6 +12,11 @@ portable/
 old version/
 work/
 
+# 素材插件安装状态
+.assets.json
+.asset_download.tmp
+_asset_tmp/
+
 Angelina-pet*.exe
 Angelina-pet*.zip
 ArknightsDeskpet*.exe
@@ -23,3 +28,13 @@ test_ear_clipping.py
 test_eye_clip_ascii.py
 test_eye_clip_dump.py
 test_render_compare.py
+# 构建产物
+build/
+dist/
+
+# 游戏素材（首次启动下载，不入库）
+pets/予愿安洁莉娜/spine/
+pets/予愿安洁莉娜/voice_cn/
+pets/予愿安洁莉娜/voice_jp/
+pets/技能图标/
+assets/avatar.png

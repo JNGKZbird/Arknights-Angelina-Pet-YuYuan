@@ -17,6 +17,8 @@
 
 > 本项目由 **JNGKZbird**（GitHub @JNGKZbird）开发，基于 [AstrariaX/Angelina-pet](https://github.com/AstrariaX/Angelina-pet) 深度重做——原作者采用逐帧 PNG 动画，本项目改用**骨骼动画**方案：实际体积大幅缩减、动画更加丝滑，这是站在巨人肩膀上的优化。由衷感谢原作者的创意与工作。本项目为粉丝同人作品，素材版权归《明日方舟》/ 鹰角网络所有。
 
+> **首次启动需要下载角色素材**：Spine 模型、语音与角色图标不随本仓库分发（版权归鹰角网络）。程序会弹出安装窗；也可以从 [素材档案库](https://github.com/JNGKZbird/Arknights-Desktop-Pets-Archive) 下载官方 zip 后手动导入。详见 [NOTICE.md](NOTICE.md)。
+
 ---
 
 ## 目录
@@ -247,9 +249,8 @@ python main.py
 ├── widgets.py            # 公共 UI 组件
 ├── spine38/              # 自研 Spine 3.8 运行时（含官方 S-H 裁剪管线 clipping.py）
 ├── pets/予愿安洁莉娜/
-│   ├── spine/            # 游戏原版 Spine 素材（build/back/front 三模型）
-│   ├── skills/           # 角色 Skill 包（随仓库分发）
-│   └── voice_*/          # 中/日语音
+│   ├── manifest.json     # 角色元数据
+│   └── skills/           # 角色 Skill 包（随仓库分发）
 ├── requirements.txt      # 依赖：PySide6、Pillow、numpy、numba
 └── settings.example.json # 配置模板（复制为 settings.json 后填密钥）
 ```
@@ -260,8 +261,8 @@ python main.py
 
 - **作者**：本项目由 **JNGKZbird** 开发（GitHub @JNGKZbird）。
 - **原作者**：本项目基于 [AstrariaX/Angelina-pet](https://github.com/AstrariaX/Angelina-pet) 深度重做，感谢原作者的创意与工作。
-- **素材版权**：角色立绘、动画、语音等素材版权归 **Hypergryph / 鹰角网络** 所有。
-- **许可证**：MIT — 为爱发电，随便用，出事了别找我。
+- **素材版权**：角色立绘、动画、语音等素材版权归 **Hypergryph / 鹰角网络** 所有；这些素材不随本仓库分发，首次启动从素材档案库下载。
+- **许可证**：代码 MIT；游戏素材不适用 MIT，见 [NOTICE.md](NOTICE.md) 与 [素材档案库](https://github.com/JNGKZbird/Arknights-Desktop-Pets-Archive)。为爱发电，随便用，出事了别找我。
 
 > 现在我是安洁莉娜厨了。
 

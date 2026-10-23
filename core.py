@@ -74,7 +74,8 @@ from PySide6.QtWidgets import (
 
 if getattr(sys, "frozen", False):
     BASE_DIR = os.path.dirname(sys.executable)
-    ASSET_DIR = getattr(sys, "_MEIPASS", BASE_DIR)
+    # 素材（pets 目录）始终外挂在 exe 旁，不用 PyInstaller 的 _MEIPASS 解压目录
+    ASSET_DIR = BASE_DIR
 else:
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
     ASSET_DIR = BASE_DIR
