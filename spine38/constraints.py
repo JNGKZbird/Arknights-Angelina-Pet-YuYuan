@@ -1,3 +1,9 @@
+# SPDX-License-Identifier: LicenseRef-Spine-Runtimes-3.8
+# Derived from Esoteric Software's spine-ts 3.8 (Spine Runtimes).
+# Part of the Spine Runtimes integration in this project; NOT MIT.
+# License texts: LICENSES/Spine-Runtimes-License-3.8.txt
+#               LICENSES/Spine-Runtimes-License-2025.txt
+
 """Spine 3.8 约束求解 — IK / 变换 / 路径约束，精确移植自 spine-ts 3.8."""
 import math
 from .loader import (TRANSFORM_ONLY_TRANSLATION,

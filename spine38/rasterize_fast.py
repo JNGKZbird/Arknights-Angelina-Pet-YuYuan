@@ -1,3 +1,9 @@
+# SPDX-License-Identifier: LicenseRef-Spine-Runtimes-3.8
+# Part of the Spine Runtimes integration in this project; NOT MIT.
+# Uses/renders data from code derived from Esoteric Software's spine-ts 3.8.
+# License texts: LICENSES/Spine-Runtimes-License-3.8.txt
+#               LICENSES/Spine-Runtimes-License-2025.txt
+
 """numba 加速光栅化 — 桌宠实时渲染路径.
 
 renderer.py 是纯 numpy 参考实现（测试/离线烘焙用）；

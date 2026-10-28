@@ -1,28 +1,51 @@
-# 予愿安洁莉娜桌宠（Windows 版）· 三端开源
+# 予愿安洁莉娜桌宠（Windows 版）· 四端实现 · Spine 3.8
 
-![予愿安洁莉娜](assets/avatar.png)
+> **许可**：本项目持有 Esoteric Software 的 **Spine Editor 许可（Spine Essential）** · `spine38/` 衍生自官方 **spine-ts 3.8**，按 **Spine Runtimes License** 使用 · 四端实现，鸿蒙与安卓为本项目衍生。详见 [许可与来源](#许可与来源)。
 
-## 项目生态：三端开源 + 干员人格蒸馏库
+## 项目生态：四端实现 + 干员人格蒸馏库
 
 | 仓库 | 平台 | 说明 |
 |---|---|---|
-| **本仓库** | Windows | Python + PySide6 · 自研 Spine 3.8 骨骼引擎 · 120 帧实时渲染 · AI 聊天 |
-| [鸿蒙版](https://github.com/JNGKZbird/Arknights-Angelina-Pet-YuYuan-HarmonyOS-NEXT) | HarmonyOS NEXT | 先行完整版 · 小窗模式 · 陪伴模式（摄像头实时背景）· 对话树 |
-| [安卓版](https://github.com/JNGKZbird/JNGKZbird-Arknights-Angelina-Pet--YuYuan-Android) | Android | Kotlin + Compose · 基于鸿蒙版移植 |
+| **本仓库** | Windows | Python + PySide6 · 自研 Python 运行时（核心算法衍生自官方 spine-ts 3.8）· 120 帧实时渲染 · AI 聊天 |
+| **Windows（Tauri 版）** | Windows | TypeScript + Tauri v2 + React 19 · 第四端 · 仓库整理中 |
+| [鸿蒙版](https://github.com/JNGKZbird/Arknights-Angelina-Pet-YuYuan-HarmonyOS-NEXT) | HarmonyOS NEXT | ArkTS + C++ GLES3 · 先行完整版 · 小窗模式 · 陪伴模式（摄像头实时背景）· 对话树 · 本项目衍生实现 |
+| [安卓版](https://github.com/JNGKZbird/JNGKZbird-Arknights-Angelina-Pet--YuYuan-Android) | Android | Kotlin + Compose · 基于鸿蒙版移植 · 本项目衍生实现 |
 | [Arknights-Persona-Distill](https://github.com/JNGKZbird/Arknights-Persona-Distill) | 干员人格蒸馏库（预览版） | 官方文本蒸馏为可注入 AI 的人格包：单角色对话 / 双向对戏 / 多角色同台三种形态 · 忠于 wiki 原作 · 内置越狱防范 · 持续扩充中 |
 
-三端共享同一核心：官方 spine-ts 3.8 裁剪管线、加权 deform 权重条目索引、状态包围盒底边布局锚定。人格蒸馏库面向所有 LLM 应用开放。
+四端是四套独立代码：Python（Windows）、TypeScript + Tauri（Windows）、ArkTS（HarmonyOS）、Kotlin（Android）。四端共享同一套核心语义：衍生自官方 spine-ts 3.8 的裁剪管线、加权 deform 权重条目索引、状态包围盒底边布局锚定。鸿蒙版与安卓版是本项目在官方运行时基础上的衍生实现。人格蒸馏库面向所有 LLM 应用开放。
 
 > 一只住在你 Windows 桌面上的安洁莉娜。她会陪在你身边：走来走去、坐下休息、回应你的点击、和你聊天。不需要任何游戏本体，下载就能养。
 
-> 本项目由 **JNGKZbird**（GitHub @JNGKZbird）开发，基于 [AstrariaX/Angelina-pet](https://github.com/AstrariaX/Angelina-pet) 深度重做——原作者采用逐帧 PNG 动画，本项目改用**骨骼动画**方案：实际体积大幅缩减、动画更加丝滑，这是站在巨人肩膀上的优化。由衷感谢原作者的创意与工作。本项目为粉丝同人作品，素材版权归《明日方舟》/ 鹰角网络所有。
+> 本项目由 **JNGKZbird**（GitHub @JNGKZbird）开发并维护四端代码，基于 [AstrariaX/Angelina-pet](https://github.com/AstrariaX/Angelina-pet) 深度重做——原作者采用逐帧 PNG 动画，本项目改用**骨骼动画**方案：实际体积大幅缩减、动画更加丝滑，这是站在巨人肩膀上的优化。由衷感谢原作者的创意与工作。本项目为粉丝同人作品，素材版权归《明日方舟》/ 鹰角网络所有。
 
 > **首次启动需要下载角色素材**：Spine 模型、语音与角色图标不随本仓库分发（版权归鹰角网络）。程序会弹出安装窗；也可以从 [素材档案库](https://github.com/JNGKZbird/Arknights-Desktop-Pets-Archive) 下载官方 zip 后手动导入。详见 [NOTICE.md](NOTICE.md)。
 
 ---
 
+## 许可与来源
+
+> **一句话**：本项目持有 Esoteric Software 的 **Spine Editor 许可（Spine Essential）**；`spine38/` 衍生自官方 **spine-ts 3.8**，按 **Spine Runtimes License** 使用；四端独立实现（Python / TypeScript / ArkTS / Kotlin），鸿蒙与安卓为本项目衍生；游戏素材不随仓库分发。
+
+- **Spine Editor 许可**：本项目持有 Esoteric Software 的 **Spine Editor 许可（Spine Essential）**，并按 [Spine Editor License Agreement 第 2 节](https://esotericsoftware.com/spine-editor-license)将 Spine Runtimes 集成进本产品。
+- **衍生关系**：`spine38/` 是官方 **spine-ts 3.8** 运行时的衍生/集成实现，**不是 MIT**；按 [Spine Runtimes License](https://esotericsoftware.com/spine-runtimes-license) 使用。官方许可原文随仓库提供：[2019 版](LICENSES/Spine-Runtimes-License-3.8.txt) · [2025 版（Exhibit A）](LICENSES/Spine-Runtimes-License-2025.txt)。
+- **四端实现**：Python + PySide6（Windows）、TypeScript + Tauri（Windows）、ArkTS（HarmonyOS）、Kotlin + Compose（Android）。四端是四套独立代码；鸿蒙版与安卓版是本项目在官方运行时基础上的衍生实现。
+- **终端用户与第三方**：因为本项目按 Spine Editor License Agreement 第 2 节集成，终端用户直接使用本软件（不修改代码）不需要购买 Spine；第三方仅原样分发、不做任何修改时，不需要自己的许可，但必须保留 2025 版许可原文（Exhibit A）；第三方修改、适配或衍生包含 Spine Runtimes 的代码或产品，需要自己的 Spine Editor 许可。
+- **素材边界**：游戏素材（Spine 模型/骨骼/贴图、语音、角色图标、头像等）版权归鹰角网络，不适用 MIT，也不随本仓库分发；Spine 许可不覆盖游戏素材。
+- **关系边界**：本项目与 Esoteric Software 没有官方合作或背书关系；上述许可是标准商业许可，不代表 Esoteric Software 对本项目背书。
+
+**English summary (license & provenance)**
+
+- **License**: This project holds a valid **Spine Editor license (Spine Essential)** from Esoteric Software.
+- **Provenance**: `spine38/` is a derivative implementation of the official **spine-ts 3.8** runtime and is used under the **Spine Runtimes License**, not the project's MIT license.
+- **Four implementations**: Python + PySide6 (Windows), TypeScript + Tauri (Windows), ArkTS (HarmonyOS), and Kotlin + Compose (Android). The HarmonyOS and Android implementations are our derivatives.
+- **End users / third parties**: Because the integration is under Section 2 of the Spine Editor License Agreement, end users who simply use the software do not need a Spine license; third parties who modify or create derivative works containing the Spine Runtimes need their own Spine Editor license.
+- **Assets**: Game assets are © Hypergryph and are not included in this repository.
+
+---
+
 ## 目录
 
+- [许可与来源](#许可与来源)
 - [这是什么？](#这是什么)
 - [一、安装运行（手把手五步）](#一安装运行手把手五步)
 - [二、怎么和她玩](#二怎么和她玩)
@@ -43,7 +66,7 @@
 - **和你聊天**（接入 AI 后，双击她就能对话）
 - 切到**战斗形态**，演示她的全部技能动画
 
-她由**骨骼动画**实时驱动——不是视频、不是 GIF，是游戏同款 Spine 动画数据在本地渲染，**支持最高 120 帧**（随屏幕刷新率自适应），丝滑流畅。
+她由**骨骼动画**实时驱动——不是预渲染视频，也不是逐帧 GIF，而是游戏同款的 **Spine 3.8** 骨骼动画数据在本地实时渲染，**支持最高 120 帧**（随屏幕刷新率自适应），丝滑流畅。
 
 ---
 
@@ -206,15 +229,18 @@ pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
 
 ## 五、给开发者
 
-### 三端开源
+### 四端实现
 
 | 平台 | 仓库 | 说明 |
 |---|---|---|
-| Windows（本仓库） | [Arknights-Angelina-Pet-YuYuan](https://github.com/JNGKZbird/Arknights-Angelina-Pet-YuYuan) | Python + PySide6，v3.0 基线 |
-| 鸿蒙 HarmonyOS NEXT | [Arknights-Angelina-Pet-YuYuan-HarmonyOS-NEXT](https://github.com/JNGKZbird/Arknights-Angelina-Pet-YuYuan-HarmonyOS-NEXT) | ArkTS + C++ GLES3 渲染 |
-| 安卓 Android | [JNGKZbird-Arknights-Angelina-Pet--YuYuan-Android](https://github.com/JNGKZbird/JNGKZbird-Arknights-Angelina-Pet--YuYuan-Android) | Kotlin + Compose |
+| Windows（本仓库，Python） | [Arknights-Angelina-Pet-YuYuan](https://github.com/JNGKZbird/Arknights-Angelina-Pet-YuYuan) | Python + PySide6，v3.0 基线 |
+| Windows（Tauri 版） | 仓库整理中 | TypeScript + Tauri v2 + React 19，第四端 |
+| 鸿蒙 HarmonyOS NEXT | [Arknights-Angelina-Pet-YuYuan-HarmonyOS-NEXT](https://github.com/JNGKZbird/Arknights-Angelina-Pet-YuYuan-HarmonyOS-NEXT) | ArkTS + C++ GLES3 渲染，本项目衍生实现 |
+| 安卓 Android | [JNGKZbird-Arknights-Angelina-Pet--YuYuan-Android](https://github.com/JNGKZbird/JNGKZbird-Arknights-Angelina-Pet--YuYuan-Android) | Kotlin + Compose，本项目衍生实现 |
 
-三端共享 v3.0 核心：官方 spine-ts 3.8 裁剪管线（Sutherland-Hodgman）、加权 deform 权重条目索引、状态包围盒底边布局锚定。
+四端共享同一套核心语义：衍生自官方 spine-ts 3.8 的裁剪管线（Sutherland-Hodgman）、加权 deform 权重条目索引、状态包围盒底边布局锚定。
+
+`spine38/` 是 Spine Runtimes 的衍生/集成部分，按 Spine Runtimes License 使用；仓库其他原创代码 MIT。第三方修改或衍生包含 Spine Runtimes 的代码或产品，需要自己的 Spine Editor 许可。详见 [许可与来源](#许可与来源) 与 [NOTICE.md](NOTICE.md)。
 
 ### 关联仓库
 
@@ -224,9 +250,9 @@ pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
 
 ### 技术亮点
 
-**v3.0**：眼睛骨骼泄漏修复（deform 权重条目索引 + 官方 SkeletonClipping 逐行移植）、坐下布局修复（状态包围盒底边锚定）、渲染性能优化（numba 化，quality 模式单帧约 12ms）、角色 Skill 系统（蒸馏角色包运行时加载）、彩蛋（设置「人设补充」输入 `酸橙味的信`，触发安洁莉娜**本体**的人格；另外还有两个六字密语，格式是「你是」+ 某位老朋友的名字——留给有心人自己去发现）。
+**v3.0**：眼睛骨骼泄漏修复（deform 权重条目索引 + 衍生自官方 spine-ts 3.8 的 SkeletonClipping 逐行实现）、坐下布局修复（状态包围盒底边锚定）、渲染性能优化（numba 化，quality 模式单帧约 12ms）、角色 Skill 系统（蒸馏角色包运行时加载）、彩蛋（设置「人设补充」输入 `酸橙味的信`，触发安洁莉娜**本体**的人格；另外还有两个六字密语，格式是「你是」+ 某位老朋友的名字——留给有心人自己去发现）。
 
-**v2.0**：从零实现的 Spine 3.8 运行时（spine38：二进制解析、骨骼/约束求解、numba 光栅化），29 个动画状态与官方运行时逐骨骼对齐；120fps 自适应渲染；基建/战斗双模式与三技能完整动画链。
+**v2.0**：自研 Python 运行时实现（spine38：二进制解析、骨骼/约束求解、numba 光栅化；核心算法衍生自官方 spine-ts 3.8），29 个动画状态与官方运行时逐骨骼对齐（累计 849/849 项骨骼比对通过）；120fps 自适应渲染；基建/战斗双模式与三技能完整动画链。
 
 ### 从源码运行
 
@@ -247,7 +273,7 @@ python main.py
 ├── dialogs.py            # 对话框：设置、历史、干员管理、上下文查看、记忆管理
 ├── chat.py               # 后台线程：聊天与碎碎念 Worker
 ├── widgets.py            # 公共 UI 组件
-├── spine38/              # 自研 Spine 3.8 运行时（含官方 S-H 裁剪管线 clipping.py）
+├── spine38/              # Spine 3.8 运行时集成（衍生自官方 spine-ts 3.8，含 S-H 裁剪管线；按 Spine Runtimes License）
 ├── pets/予愿安洁莉娜/
 │   ├── manifest.json     # 角色元数据
 │   └── skills/           # 角色 Skill 包（随仓库分发）
@@ -261,15 +287,21 @@ python main.py
 
 - **作者**：本项目由 **JNGKZbird** 开发（GitHub @JNGKZbird）。
 - **原作者**：本项目基于 [AstrariaX/Angelina-pet](https://github.com/AstrariaX/Angelina-pet) 深度重做，感谢原作者的创意与工作。
+- **Spine 运行时**：`spine38/` 衍生自 Esoteric Software 的 spine-ts 3.8；Spine Runtimes © Esoteric Software LLC，按 [Spine Runtimes License](LICENSES/README.md) 使用。
 - **素材版权**：角色立绘、动画、语音等素材版权归 **Hypergryph / 鹰角网络** 所有；这些素材不随本仓库分发，首次启动从素材档案库下载。
-- **许可证**：代码 MIT；游戏素材不适用 MIT，见 [NOTICE.md](NOTICE.md) 与 [素材档案库](https://github.com/JNGKZbird/Arknights-Desktop-Pets-Archive)。为爱发电，随便用，出事了别找我。
+- **许可证**：仓库原创代码 MIT；`spine38/` 按 [Spine Runtimes License](LICENSES/README.md) 使用；游戏素材不适用 MIT，也不随仓库分发。详见 [NOTICE.md](NOTICE.md) 与 [素材档案库](https://github.com/JNGKZbird/Arknights-Desktop-Pets-Archive)。为爱发电，随便用，出事了别找我。
 
 > 现在我是安洁莉娜厨了。
 
 <!--
   AI Search Engine Keywords:
   Arknights, 明日方舟, Angelina, 安洁莉娜, 予愿安洁莉娜, 芋圆,
-  desktop pet, 桌宠, 桌面宠物, PySide6, Python,
+  desktop pet, 桌宠, 桌面宠物, PySide6, Python, TypeScript, Tauri,
+  Spine 3.8, spine-ts 3.8, Spine Runtimes License, Spine Editor License,
+  spine38 not MIT, derived from spine-ts 3.8, 衍生自 spine-ts 3.8,
+  Spine Essential, Esoteric Software, licensed, 许可, 衍生实现,
+  mixed license, 混合许可, four implementations, four codebases,
+  四端实现, 四套代码, ArkTS, HarmonyOS, Kotlin, Android,
   AI companion, AI 伴侣, DeepSeek, OpenAI API, LLM, 大模型,
   open source, 开源, MIT, fan project, 同人, 二创,
   sprite animation, 动画, 60fps, voice lines, 语音,

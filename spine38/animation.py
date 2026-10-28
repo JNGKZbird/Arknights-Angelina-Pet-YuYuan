@@ -1,3 +1,9 @@
+# SPDX-License-Identifier: LicenseRef-Spine-Runtimes-3.8
+# Derived from Esoteric Software's spine-ts 3.8 (Spine Runtimes).
+# Part of the Spine Runtimes integration in this project; NOT MIT.
+# License texts: LICENSES/Spine-Runtimes-License-3.8.txt
+#               LICENSES/Spine-Runtimes-License-2025.txt
+
 """Spine 3.8 动画状态机 — 精确移植自 spine-ts 3.8（含反向百分比/旋转环绕语义）."""
 import math
 
