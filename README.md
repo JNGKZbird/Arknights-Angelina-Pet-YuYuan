@@ -9,7 +9,7 @@
 | **本仓库** | Windows | Python + PySide6 · 自研 Python 运行时（核心算法衍生自官方 spine-ts 3.8）· 120 帧实时渲染 · AI 聊天 |
 | **Windows（Tauri 版）** | Windows | TypeScript + Tauri v2 + React 19 · 第四端 · 仓库整理中 |
 | [鸿蒙版](https://github.com/JNGKZbird/Arknights-Angelina-Pet-YuYuan-HarmonyOS-NEXT) | HarmonyOS NEXT | ArkTS + C++ GLES3 · 先行完整版 · 小窗模式 · 陪伴模式（摄像头实时背景）· 对话树 · 本项目衍生实现 |
-| [安卓版](https://github.com/JNGKZbird/JNGKZbird-Arknights-Angelina-Pet--YuYuan-Android) | Android | Kotlin + Compose · 基于鸿蒙版移植 · 本项目衍生实现 |
+| [安卓版](https://github.com/JNGKZbird/JNGKZbird-Arknights-Angelina-Pet--YuYuan-Android) | Android | Kotlin + Compose · 基于鸿蒙版衍生实现 · 本项目衍生实现 |
 | [Arknights-Persona-Distill](https://github.com/JNGKZbird/Arknights-Persona-Distill) | 干员人格蒸馏库（预览版） | 官方文本蒸馏为可注入 AI 的人格包：单角色对话 / 双向对戏 / 多角色同台三种形态 · 忠于 wiki 原作 · 内置越狱防范 · 持续扩充中 |
 
 四端是四套独立代码：Python（Windows）、TypeScript + Tauri（Windows）、ArkTS（HarmonyOS）、Kotlin（Android）。四端共享同一套核心语义：衍生自官方 spine-ts 3.8 的裁剪管线、加权 deform 权重条目索引、状态包围盒底边布局锚定。鸿蒙版与安卓版是本项目在官方运行时基础上的衍生实现。人格蒸馏库面向所有 LLM 应用开放。
