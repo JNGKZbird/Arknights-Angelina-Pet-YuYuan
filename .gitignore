@@ -23,11 +23,16 @@ ArknightsDeskpet*.exe
 ArknightsDeskpet*.zip
 stub.exe
 
-# 排查调试脚本（本地保留）
+# 排查调试脚本（本地保留；依赖本机模型目录）
 test_ear_clipping.py
 test_eye_clip_ascii.py
 test_eye_clip_dump.py
 test_render_compare.py
+test_spine_anim.py
+test_spine_full.py
+test_spine_load.py
+test_spine_pose.py
+test_spine_render.py
 # 构建产物
 build/
 dist/
