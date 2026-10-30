@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """予愿安洁莉娜桌宠安装器：复制程序到本机 + 创建桌面快捷方式。
 
-打包方式：PyInstaller --onefile --add-data "dist/予愿安洁莉娜桌宠;桌宠" install.py
+打包方式：pyinstaller 酸橙味的信-安装程序.spec（先将 dist/酸橙味的信 打入包内「桌宠」目录）
 安装位置：%LOCALAPPDATA%\Programs\酸橙味的信（无需管理员权限，
 settings.json 等用户数据保存在程序目录旁，可写）。
 """
