@@ -1,8 +1,11 @@
 # 予愿安洁莉娜桌宠（正式名：酸橙味的信）· Windows 版 · 三端实现 · Spine 3.8
 
-> **名称说明**：本作的正式软件名是《酸橙味的信》；「予愿安洁莉娜桌宠」是仓库名与社区常用称呼。安装后的桌面快捷方式、程序名与托盘提示均为「酸橙味的信」。
-
-> **许可**：本项目持有 Esoteric Software 的 **Spine Editor 许可（Spine Essential）** · `spine38/` 衍生自官方 **spine-ts 3.8**，按 **Spine Runtimes License** 使用 · 三端实现，鸿蒙与安卓为本项目衍生。详见 [许可与来源](#许可与来源)。
+> **速览**
+> - **正式名**：酸橙味的信；「予愿安洁莉娜桌宠」是仓库名与社区常用称呼。安装后的桌面快捷方式、程序名与托盘提示均为「酸橙味的信」。
+> - **平台**：Windows（Python + PySide6）/ HarmonyOS NEXT（ArkTS + C++ GLES3）/ Android（Kotlin + Compose）三端；鸿蒙与安卓为本项目衍生实现。
+> - **渲染**：Spine 3.8 实时骨骼；核心算法衍生自官方 spine-ts 3.8；Windows 最高 120fps，安卓 60fps。
+> - **许可**：本项目持有 Esoteric Software 的 **Spine Editor 许可（Spine Essential）**；原创代码 MIT；`spine38/` 按 **Spine Runtimes License** 使用，**不是 MIT**；游戏素材不随仓库分发。详见 [许可与来源](#许可与来源)。
+> - **关联**：[捣蛋鬼（Lemuel Scamp）](https://github.com/JNGKZbird/lemuel-scamp) · 能天使 / 新约能天使 · Tauri v2。
 
 ## 项目生态：三端实现、干员人格蒸馏库与关联项目
 
