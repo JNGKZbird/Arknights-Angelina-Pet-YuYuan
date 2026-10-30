@@ -8,7 +8,7 @@ ctypes.windll.shell32.SHGetFolderPathW(None, 0, None, 0, buf)
 desktop = buf.value
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
-lnk = os.path.join(desktop, "Angelina-pet-YuYuan.lnk")
+lnk = os.path.join(desktop, "酸橙味的信-源码版.lnk")
 target = os.path.join(script_dir, "启动桌宠.bat")
 icon = os.path.join(script_dir, "assets", "avatar.ico")
 
@@ -21,7 +21,7 @@ ps = (
 )
 r = subprocess.run(["powershell", "-NoProfile", "-Command", ps], capture_output=True)
 if r.returncode == 0:
-    print("Desktop shortcut created: Angelina-pet-YuYuan")
+    print("Desktop shortcut created: 酸橙味的信-源码版")
 else:
     print("Failed to create shortcut.")
 input("Press Enter to exit...")
